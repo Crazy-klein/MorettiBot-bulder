@@ -2,9 +2,6 @@
     status: '<%= session.status %>', 
     qrDataUrl: '<%= session.qrDataUrl || '' %>',
     pairingCode: '<%= session.pairingCode || '' %>',
-    uptimeSeconds: <%= session.uptimeSeconds || 0 %>,
-    lastMessageAt: '<%= session.lastMessageAt || '' %>',
-    connectionAttempts: <%= session.connectionAttempts || 0 %>,
     refresh() {
         fetch('/api/bots/<%= bot.id %>/session-status')
             .then(res => res.json())
@@ -12,9 +9,6 @@
                 this.status = data.status;
                 this.qrDataUrl = data.qrDataUrl || '';
                 this.pairingCode = data.pairingCode || '';
-                this.uptimeSeconds = data.uptimeSeconds || 0;
-                this.lastMessageAt = data.lastMessageAt || '';
-                this.connectionAttempts = data.connectionAttempts || 0;
                 if(this.status === 'connected') {
                     setTimeout(() => window.location.href = '/dashboard', 3000);
                 }
@@ -48,24 +42,6 @@
 
         <div class="relative z-10 flex flex-col items-center">
             
-            <!-- Monitoring Stats (uniquement si connecté) -->
-            <template x-if="status === 'connected'">
-                <div class="grid grid-cols-3 gap-6 w-full mb-10">
-                    <div class="bg-white/5 p-4 rounded-3xl border border-white/5 text-center">
-                        <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">Durée</p>
-                        <p class="text-white font-mono" x-text="Math.floor(uptimeSeconds / 60) + 'm ' + (uptimeSeconds % 60) + 's'"></p>
-                    </div>
-                    <div class="bg-white/5 p-4 rounded-3xl border border-white/5 text-center">
-                        <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">Activité</p>
-                        <p class="text-white font-mono text-[10px]" x-text="lastMessageAt ? new Date(lastMessageAt).toLocaleTimeString() : 'N/A'"></p>
-                    </div>
-                    <div class="bg-white/5 p-4 rounded-3xl border border-white/5 text-center">
-                        <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">Retours</p>
-                        <p class="text-white font-mono" x-text="connectionAttempts"></p>
-                    </div>
-                </div>
-            </template>
-
             <!-- Mode Pairing Code -->
             <template x-if="status === 'pairing' && pairingCode">
                 <div class="space-y-8 flex flex-col items-center w-full">

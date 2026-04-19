@@ -6,8 +6,6 @@ export interface User {
   password?: string;
   username: string;
   role: string;
-  githubAccessToken?: string;
-  githubUsername?: string;
   resetPasswordToken?: string;
   resetPasswordExpires?: string;
   createdAt: string;
@@ -53,19 +51,5 @@ export const UserModel = {
 
   updateRole: (id: number, role: string) => {
     db.prepare('UPDATE users SET role = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?').run(role, id);
-  },
-
-  setGithubToken: (id: number, token: string, username: string) => {
-    db.prepare('UPDATE users SET githubAccessToken = ?, githubUsername = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?')
-      .run(token, username, id);
-  },
-
-  getGithubToken: (id: number): string | null => {
-    const user = db.prepare('SELECT githubAccessToken FROM users WHERE id = ?').get(id) as { githubAccessToken: string } | undefined;
-    return user?.githubAccessToken || null;
-  },
-
-  clearGithubToken: (id: number) => {
-    db.prepare('UPDATE users SET githubAccessToken = NULL, githubUsername = NULL, updatedAt = CURRENT_TIMESTAMP WHERE id = ?').run(id);
   }
 };

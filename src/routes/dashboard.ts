@@ -1,6 +1,5 @@
 import express from 'express';
 import { BotModel } from '../models/Bot.js';
-import { UserModel } from '../models/User.js';
 import { ActionLogModel } from '../models/ActionLog.js';
 import { isAuthenticated } from '../middlewares/auth.js';
 
@@ -12,10 +11,9 @@ router.get('/dashboard', isAuthenticated, (req, res) => {
   
   const bots = BotModel.findByUserId(userId);
   const logs = ActionLogModel.findByUserId(userId);
-  const user = UserModel.findById(userId);
 
   res.render('dashboard', { 
-    user, 
+    user: { username }, 
     bots, 
     logs,
     activeMenu: 'dashboard'
