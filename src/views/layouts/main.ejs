@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KuronaBot Builder - Plateforme Open Source</title>
+    <title><%= typeof title !== 'undefined' ? `${title} | KuronaBot` : 'KuronaBot Builder - Excellence & Technologie' %></title>
+    
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -19,18 +21,35 @@
                         sans: ['Inter', 'sans-serif'],
                     },
                     colors: {
-                        gold: '#d4a373',
-                        dark: '#121417',
-                        'dark-card': '#1a1d21',
+                        gold: {
+                            DEFAULT: '#d4a373',
+                            light: '#e5c07b',
+                            dark: '#c18a56',
+                            glow: 'rgba(212, 163, 115, 0.4)'
+                        },
+                        dark: {
+                            DEFAULT: '#0B0E14',
+                            card: '#121417',
+                            sidebar: '#1A1E26'
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     }
                 }
             }
         }
     </script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/custom.css">
+    
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    
     <style>
         [x-cloak] { display: none !important; }
         
@@ -47,13 +66,13 @@
             opacity: 1;
         }
 
-        /* Sidebar Curved Indicator */
+        /* Sidebar Curved Indicator - L'effet "Vague" */
         .sidebar-indicator {
             position: absolute;
             left: 0;
             width: 100%;
             height: 48px;
-            background-color: #121417; /* Same as body bg */
+            background-color: #0B0E14; /* Couleur du fond pour masquer la sidebar */
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1);
             pointer-events: none;
             z-index: 10;
@@ -63,269 +82,286 @@
             content: '';
             position: absolute;
             right: 0;
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             background-color: transparent;
             z-index: 11;
         }
         .sidebar-indicator::before {
-            top: -20px;
+            top: -24px;
             border-bottom-right-radius: 20px;
-            box-shadow: 5px 5px 0 5px #121417;
+            box-shadow: 8px 8px 0 8px #0B0E14;
         }
         .sidebar-indicator::after {
-            bottom: -20px;
+            bottom: -24px;
             border-top-right-radius: 20px;
-            box-shadow: 5px -5px 0 5px #121417;
+            box-shadow: 8px -8px 0 8px #0B0E14;
         }
 
         body {
-            background-color: #121417;
-            color: #e5e7eb;
+            background-color: #0B0E14;
+            color: #F8F9FA;
+            font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+        }
+
+        .gold-gradient-text {
+            background: linear-gradient(135deg, #d4a373 0%, #f5b041 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
     </style>
 </head>
-<body class="flex min-h-screen overflow-x-hidden">
+<body class="flex min-h-screen overflow-x-hidden selection:bg-gold/30 selection:text-gold" x-data="{ mobileMenu: false }">
     
     <% if (typeof user !== 'undefined' && user) { %>
-        <!-- Sidebar Hamburger -->
+        <!-- Sidebar Hamburger / Navigation -->
         <aside 
-            x-data="{ expanded: false, activeIndex: <%= typeof activeMenu !== 'undefined' ? (['dashboard', 'bots', 'admin', 'profile'].indexOf(activeMenu) + 1) : 0 %> }" 
+            x-data="{ expanded: false, activeIndex: <%= typeof activeMenu !== 'undefined' ? (['dashboard', 'bots', 'admin', 'profile', 'notifications'].indexOf(activeMenu) + 1) : 1 %> }" 
             @mouseenter="expanded = true" 
             @mouseleave="expanded = false"
-            :class="expanded ? 'w-64 shadow-2xl' : 'w-20'"
-            class="hidden md:flex flex-col bg-[#1a1d21] border-r border-white/5 transition-all duration-300 ease-in-out fixed h-full z-50 group"
+            :class="expanded ? 'w-64 shadow-[20px_0_50px_rgba(0,0,0,0.5)]' : 'w-20'"
+            class="hidden md:flex flex-col bg-dark-sidebar border-r border-white/5 transition-all duration-500 ease-[cubic-bezier(0.2,0,0,1)] fixed h-full z-50 group"
         >
-            <div class="p-6 flex items-center justify-center h-20 border-b border-white/5">
-                <div class="w-10 h-10 bg-gold rounded-xl flex items-center justify-center shadow-lg shadow-gold/20">
-                    <span class="text-dark font-bold text-xl">K</span>
+            <!-- Logo Section -->
+            <div class="p-5 flex items-center justify-center h-24 border-b border-white/5">
+                <div class="w-12 h-12 relative group-hover:scale-110 transition-transform duration-500">
+                    <img src="https://i.pinimg.com/736x/84/01/2f/84012f2c86e00e844a49c903901f4640.jpg" alt="Kurona Logo" class="w-full h-full rounded-2xl object-cover shadow-[0_0_15px_rgba(212,163,115,0.4)] border border-gold/30">
                 </div>
-                <span x-show="expanded" x-transition.opacity class="ml-3 font-bold text-xl tracking-tight text-white whitespace-nowrap">KuronaBot</span>
+                <span x-show="expanded" x-transition:enter="delay-150 transition-opacity duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="ml-4 font-bold text-xl tracking-tight gold-gradient-text whitespace-nowrap">KuronaBot</span>
             </div>
 
-            <nav class="flex-1 mt-6 relative overflow-hidden">
-                <!-- Curved Indicator -->
+            <!-- Navigation Links -->
+            <nav class="flex-1 mt-8 relative">
+                <!-- Curved "Wave" Indicator -->
                 <div 
                     x-show="activeIndex > 0"
                     class="sidebar-indicator" 
-                    :style="`top: ${(activeIndex - 1) * 60 + 24}px`"
+                    :style="`top: ${(activeIndex - 1) * 64 + 32}px`"
                 ></div>
 
-                <div class="space-y-3 px-4 relative z-20">
-                    <a href="/dashboard" @mouseover="activeIndex = 1" class="flex items-center h-12 rounded-xl transition-all duration-300 relative group/item" :class="activeIndex === 1 ? 'text-gold' : 'text-gray-400 hover:text-white'">
+                <div class="space-y-4 px-4 relative z-20">
+                    <a href="/dashboard" @mouseenter="activeIndex = 1" class="flex items-center h-12 rounded-2xl transition-all duration-300 relative group/item" :class="activeIndex === 1 ? 'text-gold bg-transparent' : 'text-gray-500 hover:text-white'">
                         <div class="w-12 flex items-center justify-center shrink-0">
-                            <i data-lucide="layout-dashboard"></i>
+                            <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
                         </div>
-                        <span x-show="expanded" x-transition.opacity.duration.300 class="ml-2 font-medium">Tableau de bord</span>
+                        <span x-show="expanded" class="ml-2 font-semibold text-sm">Tableau de bord</span>
                     </a>
 
-                    <a href="/bots/new" @mouseover="activeIndex = 2" class="flex items-center h-12 rounded-xl transition-all duration-300 relative group/item" :class="activeIndex === 2 ? 'text-gold' : 'text-gray-400 hover:text-white'">
+                    <a href="/bots/new" @mouseenter="activeIndex = 2" class="flex items-center h-12 rounded-2xl transition-all duration-300 relative group/item" :class="activeIndex === 2 ? 'text-gold' : 'text-gray-500 hover:text-white'">
                         <div class="w-12 flex items-center justify-center shrink-0">
-                            <i data-lucide="plus-square"></i>
+                            <i data-lucide="zap" class="w-5 h-5"></i>
                         </div>
-                        <span x-show="expanded" x-transition.opacity.duration.300 class="ml-2 font-medium">Nouveau Bot</span>
+                        <span x-show="expanded" class="ml-2 font-semibold text-sm">Nouveau Bot</span>
                     </a>
 
                     <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
-                    <a href="/admin" @mouseover="activeIndex = 3" class="flex items-center h-12 rounded-xl transition-all duration-300 relative group/item" :class="activeIndex === 3 ? 'text-gold' : 'text-gray-400 hover:text-white'">
+                    <a href="/admin" @mouseenter="activeIndex = 3" class="flex items-center h-12 rounded-2xl transition-all duration-300 relative group/item" :class="activeIndex === 3 ? 'text-gold' : 'text-gray-500 hover:text-white'">
                         <div class="w-12 flex items-center justify-center shrink-0">
-                            <i data-lucide="shield"></i>
+                            <i data-lucide="shield-check" class="w-5 h-5"></i>
                         </div>
-                        <span x-show="expanded" x-transition.opacity.duration.300 class="ml-2 font-medium">Administration</span>
+                        <span x-show="expanded" class="ml-2 font-semibold text-sm">Administration</span>
                     </a>
                     <% } %>
 
-                    <a href="/profile" @mouseover="activeIndex = 4" class="flex items-center h-12 rounded-xl transition-all duration-300 relative group/item" :class="activeIndex === 4 ? 'text-gold' : 'text-gray-400 hover:text-white'">
+                    <a href="/profile" @mouseenter="activeIndex = 4" class="flex items-center h-12 rounded-2xl transition-all duration-300 relative group/item" :class="activeIndex === 4 ? 'text-gold' : 'text-gray-500 hover:text-white'">
                         <div class="w-12 flex items-center justify-center shrink-0">
-                            <i data-lucide="user"></i>
+                            <i data-lucide="settings" class="w-5 h-5"></i>
                         </div>
-                        <span x-show="expanded" x-transition.opacity.duration.300 class="ml-2 font-medium">Mon Profil</span>
+                        <span x-show="expanded" class="ml-2 font-semibold text-sm">Paramètres</span>
                     </a>
 
-                    <a href="/notifications" @mouseover="activeIndex = 5" class="flex items-center h-12 rounded-xl transition-all duration-300 relative group/item" :class="activeIndex === 5 ? 'text-gold' : 'text-gray-400 hover:text-white'">
+                    <a href="/notifications" @mouseenter="activeIndex = 5" class="flex items-center h-12 rounded-2xl transition-all duration-300 relative group/item" :class="activeIndex === 5 ? 'text-gold' : 'text-gray-500 hover:text-white'">
                         <div class="w-12 flex items-center justify-center shrink-0">
-                            <i data-lucide="bell"></i>
+                            <i data-lucide="bell" class="w-5 h-5"></i>
                         </div>
-                        <span x-show="expanded" x-transition.opacity.duration.300 class="ml-2 font-medium">Notifications</span>
+                        <span x-show="expanded" class="ml-2 font-semibold text-sm">Notifications</span>
                     </a>
                 </div>
             </nav>
 
-            <div class="p-4 border-t border-white/5">
-                <a href="/logout" class="flex items-center h-12 rounded-xl text-red-400 hover:bg-red-400/10 transition-all duration-300 px-4">
+            <!-- Bottom Section -->
+            <div class="p-4 border-t border-white/5 space-y-2">
+                <a href="/logout" class="flex items-center h-12 rounded-2xl text-red-400 hover:bg-red-400/5 transition-all duration-300 px-4 group/logout">
                     <div class="w-12 flex items-center justify-center shrink-0">
-                        <i data-lucide="log-out"></i>
+                        <i data-lucide="power" class="w-5 h-5 group-hover/logout:scale-110 transition-transform"></i>
                     </div>
-                    <span x-show="expanded" x-transition.opacity.duration.300 class="ml-2 font-medium">Déconnexion</span>
+                    <span x-show="expanded" class="ml-2 font-bold text-xs uppercase tracking-widest">Déconnexion</span>
                 </a>
             </div>
         </aside>
     <% } %>
 
-    <div class="flex-1 flex flex-col <%= (typeof user !== 'undefined' && user) ? 'md:ml-20' : '' %>">
-        <!-- Header -->
-        <header class="h-20 bg-[#121417]/80 backdrop-blur-md border-b border-white/5 sticky top-0 z-40 px-6 flex items-center justify-between">
+    <div class="flex-1 flex flex-col <%= (typeof user !== 'undefined' && user) ? 'md:ml-20' : '' %> min-w-0">
+        <!-- Modern Header -->
+        <header class="h-24 bg-dark/60 backdrop-blur-2xl border-b border-white/5 sticky top-0 z-40 px-8 flex items-center justify-between">
             <div class="flex items-center">
-                <a href="/" class="flex items-center md:hidden">
-                    <div class="w-10 h-10 bg-gold rounded-xl flex items-center justify-center">
-                        <span class="text-dark font-bold">K</span>
-                    </div>
-                </a>
-                <h1 class="hidden md:block text-lg font-semibold text-white/90 ml-4"><%= typeof title !== 'undefined' ? title : APP_NAME %></h1>
+                <button @click="mobileMenu = true" class="md:hidden mr-4 p-2 text-gray-400 hover:text-white bg-white/5 rounded-xl border border-white/5">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <div class="flex flex-col">
+                    <span class="text-[10px] font-black text-gold/60 uppercase tracking-[0.3em] mb-0.5">SYSTÈME OPÉRATIONNEL</span>
+                    <h1 class="text-xl font-bold text-white tracking-tight"><%= typeof title !== 'undefined' ? title : 'Dashboard' %></h1>
+                </div>
             </div>
 
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-6">
                 <% if (typeof user !== 'undefined' && user) { %>
-                    <!-- Notifications Dropdown -->
-                    <div x-data="{ 
-                        open: false, 
-                        notifications: [], 
-                        unreadCount: 0,
-                        fetchNotifications() {
-                            fetch('/api/notifications')
-                                .then(res => res.json())
-                                .then(data => {
-                                    this.notifications = data.notifications;
-                                    this.unreadCount = data.unreadCount;
-                                });
-                        },
-                        markRead(id = null) {
-                            fetch('/api/notifications/mark-read', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ id })
-                            }).then(() => {
-                                this.fetchNotifications();
-                            });
-                        }
-                    }" x-init="fetchNotifications(); setInterval(() => fetchNotifications(), 30000)" class="relative">
-                        <button 
-                            @click="open = !open; if(open) fetchNotifications()" 
-                            class="relative p-2 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all duration-300 border border-white/5"
-                        >
-                            <i data-lucide="bell" class="w-5 h-5"></i>
-                            <template x-if="unreadCount > 0">
-                                <span class="absolute top-1 right-1 w-4 h-4 bg-red-500 text-[10px] font-bold text-white flex items-center justify-center rounded-full border-2 border-[#121417]">
-                                    <span x-text="unreadCount > 9 ? '9+' : unreadCount"></span>
-                                </span>
-                            </template>
-                        </button>
-
-                        <div 
-                            x-show="open" 
-                            x-cloak
-                            @click.away="open = false"
-                            class="absolute right-0 mt-3 w-80 bg-[#1a1d21] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 origin-top-right transition-all duration-400"
-                            x-transition:enter="dropdown-elastic-enter-active"
-                            x-transition:enter-start="dropdown-elastic-enter"
-                            x-transition:enter-end="dropdown-elastic-enter-to"
-                        >
-                            <div class="p-4 border-b border-white/5 flex items-center justify-between">
-                                <h4 class="text-sm font-bold text-white">Notifications</h4>
-                                <button @click="markRead()" x-show="unreadCount > 0" class="text-[10px] text-gold font-bold uppercase hover:underline">Tout marquer lu</button>
-                            </div>
-                            
-                            <div class="max-h-96 overflow-y-auto">
-                                <template x-if="notifications.length === 0">
-                                    <div class="p-8 text-center">
-                                        <div class="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-600">
-                                            <i data-lucide="bell-off" class="w-6 h-6"></i>
-                                        </div>
-                                        <p class="text-xs text-gray-500">Aucune notification</p>
-                                    </div>
-                                </template>
-
-                                <template x-for="notif in notifications" :key="notif.id">
-                                    <div 
-                                        class="p-4 border-b border-white/[0.02] flex items-start space-x-3 transition-colors relative group"
-                                        :class="notif.isRead ? 'opacity-60' : 'bg-gold/5'"
-                                    >
-                                        <div :class="{
-                                            'text-blue-400 bg-blue-400/10': notif.type === 'info',
-                                            'text-green-400 bg-green-400/10': notif.type === 'success',
-                                            'text-yellow-400 bg-yellow-400/10': notif.type === 'warning',
-                                            'text-red-400 bg-red-400/10': notif.type === 'error'
-                                        }" class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0">
-                                            <i x-bind:data-lucide="notif.type === 'success' ? 'check-circle' : (notif.type === 'error' ? 'alert-triangle' : 'info')" class="w-4 h-4"></i>
-                                        </div>
-                                        <div class="flex-1 min-w-0">
-                                            <p class="text-xs font-bold text-white truncate" x-text="notif.title"></p>
-                                            <p class="text-[10px] text-gray-400 mt-0.5 line-clamp-2" x-text="notif.message"></p>
-                                            <p class="text-[9px] text-gray-600 mt-1 uppercase font-mono" x-text="new Date(notif.createdAt).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})"></p>
-                                        </div>
-                                        <button 
-                                            x-show="!notif.isRead"
-                                            @click="markRead(notif.id)" 
-                                            class="absolute right-4 top-4 w-2 h-2 bg-gold rounded-full"
-                                        ></button>
-                                    </div>
-                                </template>
-                            </div>
-
-                            <div class="p-3 bg-white/[0.02] text-center">
-                                <a href="/notifications" class="text-[10px] font-bold text-gray-500 hover:text-white transition-colors">VOIR TOUTES LES NOTIFICATIONS</a>
-                            </div>
+                    <!-- Stats Quick View (Desktop Only) -->
+                    <div class="hidden lg:flex items-center space-x-8 px-6 py-2 bg-white/5 border border-white/5 rounded-2xl mr-4">
+                        <div class="flex flex-col">
+                            <span class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Temps d'activité</span>
+                            <span class="text-xs font-mono text-gold">99.9%</span>
+                        </div>
+                        <div class="w-px h-6 bg-white/10"></div>
+                        <div class="flex flex-col">
+                            <span class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Bots Actifs</span>
+                            <span class="text-xs font-mono text-gold">--</span>
                         </div>
                     </div>
 
-                    <!-- Profil Dropdown -->
+                    <!-- Profile Dropdown -->
                     <div x-data="{ open: false }" class="relative">
                         <button 
                             @click="open = !open" 
-                            class="flex items-center space-x-3 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl border border-white/10 transition-all duration-300"
+                            class="flex items-center space-x-4 p-1.5 pl-4 pr-3 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 transition-all duration-500 hover:border-gold/30 group"
                         >
-                            <div class="w-8 h-8 rounded-full bg-gold/20 flex items-center justify-center text-gold border border-gold/30">
-                                <i data-lucide="user" class="w-4 h-4"></i>
+                            <span class="text-sm font-bold text-white/90 group-hover:text-white transition-colors"><%= user.username %></span>
+                            <div class="w-9 h-9 rounded-xl bg-gold/20 flex items-center justify-center text-gold border border-gold/20 shadow-inner group-hover:shadow-gold/20 group-hover:scale-105 transition-all">
+                                <i data-lucide="user" class="w-5 h-5"></i>
                             </div>
-                            <span class="text-sm font-medium text-white/80"><%= user.username %></span>
-                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 transition-transform duration-300" :class="open ? 'rotate-180' : ''"></i>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform duration-500" :class="open ? 'rotate-180 text-gold' : ''"></i>
                         </button>
 
                         <div 
                             x-show="open" 
                             x-cloak
                             @click.away="open = false"
-                            class="absolute right-0 mt-3 w-56 bg-[#1a1d21] border border-white/10 rounded-2xl shadow-2xl p-2 z-50 origin-top-right transition-all duration-400 cubic-bezier"
+                            class="absolute right-0 mt-4 w-64 bg-dark-card border border-white/10 rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.6)] p-3 z-50 origin-top-right overflow-hidden"
                             x-transition:enter="dropdown-elastic-enter-active"
                             x-transition:enter-start="dropdown-elastic-enter"
                             x-transition:enter-end="dropdown-elastic-enter-to"
+                            x-transition:leave="transition ease-in duration-200"
+                            x-transition:leave-start="opacity-100 scale-100"
+                            x-transition:leave-end="opacity-0 scale-95"
                         >
-                            <a href="/dashboard" class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-gray-400 hover:text-gold hover:bg-white/5 hover:translate-x-1 transition-all duration-300">
-                                <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-                                <span class="text-sm">Dashboard</span>
+                            <!-- Decor -->
+                            <div class="absolute -top-10 -right-10 w-24 h-24 bg-gold/5 rounded-full blur-2xl"></div>
+
+                            <a href="/profile" class="flex items-center space-x-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:text-gold hover:bg-white/5 hover:translate-x-1 transition-all duration-300 relative group/link">
+                                <i data-lucide="user-cog" class="w-4 h-4"></i>
+                                <span class="text-sm font-semibold">Mon Profil</span>
+                                <i data-lucide="arrow-right" class="w-3 h-3 ml-auto opacity-0 group-hover/link:opacity-100 transition-all"></i>
                             </a>
-                            <a href="/profile" class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-gray-400 hover:text-gold hover:bg-white/5 hover:translate-x-1 transition-all duration-300">
-                                <i data-lucide="user" class="w-4 h-4"></i>
-                                <span class="text-sm">Profil</span>
+                            <a href="/notifications" class="flex items-center space-x-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:text-gold hover:bg-white/5 hover:translate-x-1 transition-all duration-300 relative group/link">
+                                <i data-lucide="bell-ring" class="w-4 h-4"></i>
+                                <span class="text-sm font-semibold">Notifications</span>
                             </a>
                             <div class="h-px bg-white/5 my-2"></div>
-                            <a href="/logout" class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-red-400 hover:bg-red-400/10 transition-all duration-300">
+                            <a href="/logout" class="flex items-center space-x-3 px-4 py-3.5 rounded-2xl text-red-500/80 hover:text-red-500 hover:bg-red-500/5 transition-all duration-300">
                                 <i data-lucide="log-out" class="w-4 h-4"></i>
-                                <span class="text-sm">Déconnexion</span>
+                                <span class="text-sm font-bold uppercase tracking-widest text-[10px]">Déconnexion</span>
                             </a>
                         </div>
                     </div>
                 <% } else { %>
-                    <a href="/login" class="text-sm font-medium text-gray-400 hover:text-white transition-colors">Connexion</a>
-                    <a href="/register" class="bg-gold text-dark font-semibold px-5 py-2.5 rounded-xl hover:scale-105 transition-all shadow-lg shadow-gold/20">S'inscrire</a>
+                    <div class="flex items-center space-x-6">
+                        <a href="/login" class="text-sm font-bold text-gray-400 hover:text-white transition-colors uppercase tracking-widest">Connexion</a>
+                        <a href="/register" class="bg-gold text-dark font-black px-8 py-3.5 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-gold/20 text-xs uppercase tracking-widest border border-gold-light/20">S'inscrire</a>
+                    </div>
                 <% } %>
             </div>
         </header>
 
-        <!-- Main Content -->
-        <main class="p-6 md:p-10 max-w-7xl mx-auto w-full">
+        <!-- Main Content with Fade Effect -->
+        <main class="flex-1 p-8 md:p-12 max-w-[1600px] mx-auto w-full" x-data="{ loaded: false }" x-init="setTimeout(() => loaded = true, 50)" :class="loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'" class="transition-all duration-700 ease-out">
             <%- body %>
         </main>
 
-        <!-- Footer -->
-        <footer class="mt-auto py-10 px-6 border-t border-white/5 flex flex-col md:flex-row items-center justify-between text-gray-500 text-sm">
-            <p>&copy; 2026 KuronaBot Builder. Tous droits réservés.</p>
-            <div class="flex space-x-6 mt-4 md:mt-0">
-                <a href="#" class="hover:text-gold transition-colors">Conditions d'utilisation</a>
-                <a href="#" class="hover:text-gold transition-colors">Confidentialité</a>
-                <a href="#" class="hover:text-gold transition-colors">GitHub</a>
+        <!-- Sophisticated Footer -->
+        <footer class="py-12 px-10 border-t border-white/5 bg-white/[0.01]">
+            <div class="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between">
+                <div class="flex flex-col items-center md:items-start space-y-2">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-6 h-6 bg-gold rounded-lg flex items-center justify-center">
+                            <span class="text-dark font-black text-[10px]">K</span>
+                        </div>
+                        <span class="text-sm font-bold text-white tracking-widest">KURONABOT <span class="text-gold">BUILDER</span></span>
+                    </div>
+                    <p class="text-gray-600 text-xs font-medium">L'Excellence de l'Automatisation WhatsApp.</p>
+                </div>
+                
+                <div class="flex items-center space-x-12 mt-8 md:mt-0">
+                    <div class="flex flex-col space-y-2">
+                        <span class="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Navigation</span>
+                        <a href="/dashboard" class="text-xs text-gray-400 hover:text-gold transition-colors">Accueil</a>
+                        <a href="/bots/new" class="text-xs text-gray-400 hover:text-gold transition-colors">Architecture</a>
+                    </div>
+                    <div class="flex flex-col space-y-2">
+                        <span class="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Légal</span>
+                        <a href="#" class="text-xs text-gray-400 hover:text-gold transition-colors">Terms of Service</a>
+                        <a href="#" class="text-xs text-gray-400 hover:text-gold transition-colors">Privacy Policy</a>
+                    </div>
+                </div>
+            </div>
+            <div class="max-w-[1600px] mx-auto mt-12 pt-8 border-t border-white/[0.03] flex justify-center lg:justify-between items-center text-[10px] text-gray-700 font-bold uppercase tracking-widest">
+                <p>&copy; 2026 KURONABOT CORP. ALL RIGHTS RESERVED - PLATINUM EDITION</p>
+                <div class="hidden lg:flex items-center space-x-4">
+                    <i data-lucide="shield-check" class="w-4 h-4 opacity-30"></i>
+                    <span>SSL ENCRYPTED SECURE INFRASTRUCTURE</span>
+                </div>
             </div>
         </footer>
+    </div>
+
+    <!-- Mobile Overlay Menu -->
+    <div x-show="mobileMenu" 
+         x-cloak
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-dark/95 backdrop-blur-xl z-[100] flex flex-col p-8 md:hidden"
+    >
+        <div class="flex justify-between items-center mb-12">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gold rounded-xl flex items-center justify-center">
+                    <span class="text-dark font-black">K</span>
+                </div>
+                <span class="font-bold text-xl tracking-tight text-white">KuronaBot</span>
+            </div>
+            <button @click="mobileMenu = false" class="p-2 bg-white/5 border border-white/10 rounded-xl text-gray-400 hover:text-white">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+
+        <nav class="flex-1 flex flex-col space-y-6">
+            <a href="/dashboard" class="text-3xl font-bold flex items-center group">
+                <i data-lucide="layout-dashboard" class="w-8 h-8 mr-4 group-hover:text-gold transition-colors"></i>
+                Tableau de bord
+            </a>
+            <a href="/bots/new" class="text-3xl font-bold flex items-center group">
+                <i data-lucide="zap" class="w-8 h-8 mr-4 group-hover:text-gold transition-colors"></i>
+                Nouveau Bot
+            </a>
+            <a href="/profile" class="text-3xl font-bold flex items-center group">
+                <i data-lucide="user" class="w-8 h-8 mr-4 group-hover:text-gold transition-colors"></i>
+                Profil
+            </a>
+        </nav>
+
+        <div class="pt-8 border-t border-white/5 flex flex-col space-y-4">
+            <% if (typeof user !== 'undefined' && user) { %>
+                <a href="/logout" class="text-red-500 font-bold flex items-center">
+                    <i data-lucide="log-out" class="w-6 h-6 mr-3"></i>
+                    Déconnexion
+                </a>
+            <% } else { %>
+                <a href="/login" class="text-white font-bold">Connexion</a>
+                <a href="/register" class="text-gold font-bold">S'inscrire</a>
+            <% } %>
+        </div>
     </div>
 
     <script>

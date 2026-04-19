@@ -10,15 +10,25 @@ import logger from '../utils/logger.js';
 import { z } from 'zod';
 import path from 'path';
 import fs from 'fs-extra';
+import rateLimit from 'express-rate-limit';
 
 const router = express.Router();
 
+// Rate limiter pour la génération de bot
+const generationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 heure
+  max: 10,
+  message: 'Limite de génération atteinte (10 par heure).',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 const botSchema = z.object({
-  name: z.string().min(3, "Nom trop court"),
+  name: z.string().min(3, "Nom trop court").max(50).regex(/^[a-zA-Z0-9 _-]+$/, "Caractères invalides"),
   type: z.enum(['MDX', 'East', 'Custom']),
-  ownerName: z.string().min(2),
-  ownerNumber: z.string().regex(/^\d+$/, "Numéro invalide"),
-  prefix: z.string().max(1),
+  ownerName: z.string().min(2).max(50),
+  ownerNumber: z.string().regex(/^\d{10,15}$/, "Numéro invalide (format international sans + attendu)"),
+  prefix: z.string().length(1, "Le préfixe doit faire exactement 1 caractère"),
   modules: z.array(z.string()).optional()
 });
 
@@ -26,7 +36,7 @@ router.get('/bots/new', isAuthenticated, (req, res) => {
   res.render('bot-config', { errors: [], data: {}, activeMenu: 'bots' });
 });
 
-router.post('/api/bots/generate', isAuthenticated, async (req, res) => {
+router.post('/api/bots/generate', isAuthenticated, generationLimiter, async (req, res) => {
   const userId = (req.session as any).userId;
   
   try {
@@ -46,10 +56,10 @@ router.post('/api/bots/generate', isAuthenticated, async (req, res) => {
 
     // Create automatic backup
     BotBackupModel.create(botId, JSON.stringify(data));
-    logger.info({ botId, userId }, 'Nouveau bot généré et sauvegardé');
+    logger.info({ botId, userId }, 'Nouveau bot généré');
 
     ActionLogModel.create(userId, 'Génération de bot', `Le bot ${data.name} a été généré.`);
-    NotificationModel.create(userId, 'Génération réussie', `Votre bot "${data.name}" a été généré avec succès et est prêt à être téléchargé.`, 'success');
+    NotificationModel.create(userId, 'Génération réussie', `Votre bot "${data.name}" a été généré avec succès.`, 'success');
 
     const zipPath = await BotGenerator.generateZip({
       name: data.name,
@@ -60,17 +70,25 @@ router.post('/api/bots/generate', isAuthenticated, async (req, res) => {
       modules: data.modules || []
     });
 
-    res.download(zipPath, `${data.name}.zip`, async (err) => {
+    // Sécurité : Vérifier le chemin du ZIP
+    const resolvedPath = path.resolve(zipPath);
+    const tempDir = path.resolve(process.cwd(), 'temp');
+    if (!resolvedPath.startsWith(tempDir)) {
+      throw new Error('Tentative d\'accès non autorisé au système de fichiers');
+    }
+
+    res.download(zipPath, `${data.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.zip`, async (err) => {
+      if (err) logger.error(err, 'Erreur téléchargement ZIP');
       await BotGenerator.cleanup(zipPath);
     });
 
   } catch (err) {
     if (err instanceof z.ZodError) {
-      logger.warn({ errors: err.issues, userId }, 'Erreur de validation lors de la génération du bot');
+      logger.warn({ errors: err.issues, userId }, 'Erreur de validation bot');
       res.render('bot-config', { errors: err.issues, data: req.body, activeMenu: 'bots' });
     } else {
-      logger.error({ err, userId }, 'Erreur critique lors de la génération du bot');
-      res.status(500).render('error', { message: 'Erreur lors de la génération du ZIP', error: err });
+      logger.error({ err, userId }, 'Erreur génération bot');
+      res.status(500).render('error', { message: 'Erreur lors de la génération', error: err });
     }
   }
 });
