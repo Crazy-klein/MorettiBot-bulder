@@ -1,9 +1,14 @@
 export const config = {
-  name: "KuronaBot",
-  type: "MDX",
-  prefix: ".",
-  ownerName: "Admin",
-  ownerNumber: "0",
-  enabledModules: ["ai"],
-  version: "1.0.0"
+  name: "{{BOT_NAME}}",
+  type: "{{BOT_TYPE}}",
+  prefix: "{{BOT_PREFIX}}",
+  ownerName: "{{OWNER_NAME}}",
+  ownerNumber: "{{OWNER_NUMBER}}",
+  enabledModules: {
+    ai: {{ENABLE_AI}},
+    downloader: {{ENABLE_DOWNLOADER}},
+    group: {{ENABLE_GROUP}},
+    tools: {{ENABLE_TOOLS}}
+  },
+  version: "1.1.0"
 };

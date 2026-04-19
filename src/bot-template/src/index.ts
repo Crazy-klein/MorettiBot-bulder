@@ -1,25 +1,50 @@
 import makeWASocket, { 
   DisconnectReason, 
   useMultiFileAuthState, 
-  fetchLatestBaileysVersion 
+  fetchLatestBaileysVersion,
+  WASocket
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import qrcode from 'qrcode-terminal';
 import pino from 'pino';
 import { config } from './config.js';
+import { handleMessage } from './handlers/messageHandler.js';
 
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
   const { version } = await fetchLatestBaileysVersion();
 
-  console.log(`--- Démarrage de ${config.name} (Type: ${config.type}) ---`);
+  console.log(`\n┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓`);
+  console.log(`┃  [KuronaBot] Initialisation de ${config.name.padEnd(16)} ┃`);
+  console.log(`┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`);
 
-  const sock = makeWASocket({
+  const sock: WASocket = makeWASocket({
     version,
     auth: state,
-    printQRInTerminal: true,
+    printQRInTerminal: false, // On gère manuellement pour le pairing code
     logger: pino({ level: 'silent' }) as any,
   });
+
+  // Gestion du code d'appairage (Pairing Code)
+  if (!sock.authState.creds.registered) {
+    const phoneNumber = config.ownerNumber.replace(/[^0-9]/g, '');
+    
+    if (phoneNumber && phoneNumber.length > 5) {
+      setTimeout(async () => {
+        try {
+          const code = await sock.requestPairingCode(phoneNumber);
+          console.log(`\n┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓`);
+          console.log(`┃  [KuronaBot] CODE D'APPAIRAGE :        ┃`);
+          console.log(`┃  > ${code.match(/.{1,4}/g)?.join('-').padEnd(25)} ┃`);
+          console.log(`┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`);
+        } catch (error) {
+          console.error(`[KuronaBot] Échec de la demande de code d'appairage. Basculement sur QR Code...`);
+        }
+      }, 3000);
+    } else {
+      console.log(`[KuronaBot] Aucun numéro valide pour l'appairage. Affichage du QR Code...`);
+    }
+  }
 
   sock.ev.on('creds.update', saveCreds);
 
@@ -27,38 +52,22 @@ async function startBot() {
     const { connection, lastDisconnect, qr } = update;
     
     if (qr) {
-      console.log('Scannez le code QR ci-dessous :');
+      console.log(`[KuronaBot] Veuillez scanner le QR Code ci-dessous :`);
+      qrcode.generate(qr, { small: true });
     }
 
     if (connection === 'close') {
       const shouldReconnect = (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
+      console.log(`[KuronaBot] Connexion fermée. Reconnexion : ${shouldReconnect}`);
       if (shouldReconnect) {
         startBot();
       }
     } else if (connection === 'open') {
-      console.log(`${config.name} est connecté !`);
+      console.log(`\n[KuronaBot] ${config.name} est maintenant CONNECTÉ ! 🚀`);
     }
   });
 
-  sock.ev.on('messages.upsert', async (m) => {
-    const msg = m.messages[0];
-    if (!msg.message || msg.key.fromMe) return;
-
-    const body = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
-    if (!body.startsWith(config.prefix)) return;
-
-    const command = body.slice(config.prefix.length).trim().split(' ').shift()?.toLowerCase();
-    
-    if (command === 'ping') {
-      await sock.sendMessage(msg.key.remoteJid!, { text: 'Pong! 🏓' });
-    }
-
-    if (command === 'status') {
-      await sock.sendMessage(msg.key.remoteJid!, { 
-        text: `*SYSTEM STATUS*\n\nBot: ${config.name}\nModules: ${config.enabledModules.join(', ')}\nVersion: ${config.version}` 
-      });
-    }
-  });
+  sock.ev.on('messages.upsert', (m) => handleMessage(sock, m));
 }
 
 startBot();
