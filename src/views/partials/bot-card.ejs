@@ -1,0 +1,54 @@
+<div class="bg-dark-card border border-white/5 rounded-[2rem] p-6 hover:-translate-y-2 hover:border-gold/30 transition-all duration-300 group flex flex-col h-full shadow-lg">
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center space-x-3">
+            <div class="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-gray-400 group-hover:text-gold group-hover:bg-gold/10 transition-colors">
+                <i data-lucide="bot"></i>
+            </div>
+            <div>
+                <h4 class="text-white font-bold group-hover:text-gold transition-colors"><%= bot.name %></h4>
+                <p class="text-xs text-gray-500 uppercase tracking-widest font-mono"><%= bot.type %></p>
+            </div>
+        </div>
+        <div class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border"
+            class="<%= bot.status === 'running' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 
+                   (bot.status === 'generated' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 
+                   'bg-white/5 text-gray-500 border-white/10') %>">
+            <%= bot.status === 'running' ? 'Actif' : (bot.status === 'generated' ? 'Prêt' : 'Brouillon') %>
+        </div>
+    </div>
+
+    <div class="space-y-3 mb-8 flex-1">
+        <div class="flex items-center justify-between text-xs">
+            <span class="text-gray-500">Préfixe :</span>
+            <span class="text-white bg-white/5 px-2 py-0.5 rounded font-mono"><%= bot.prefix %></span>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+            <span class="text-gray-500">Créé le :</span>
+            <span class="text-gray-400"><%= new Date(bot.createdAt).toLocaleDateString() %></span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mt-auto">
+        <% if (bot.status === 'running') { %>
+            <a href="/bots/<%= bot.id %>/session" class="col-span-1 bg-gold/10 text-gold font-bold py-2.5 rounded-xl text-xs text-center border border-gold/10 hover:bg-gold/20 transition-all">
+                Voir Session
+            </a>
+            <form action="/bots/<%= bot.id %>/stop-session" method="POST" class="col-span-1">
+                <button type="submit" class="w-full bg-red-400/10 text-red-400 font-bold py-2.5 rounded-xl text-xs border border-red-400/10 hover:bg-red-400/20 transition-all">
+                    Arrêter
+                </button>
+            </form>
+        <% } else { %>
+            <form action="/bots/<%= bot.id %>/start-session" method="POST" class="col-span-1">
+                <button type="submit" class="w-full bg-gold/10 text-gold font-bold py-2.5 rounded-xl text-xs border border-gold/10 hover:bg-gold/20 transition-all">
+                    Lancer Session
+                </button>
+            </form>
+            <form action="/bots/<%= bot.id %>/delete" method="POST" class="col-span-1" onsubmit="return confirm('Supprimer ce bot ?')">
+                <button type="submit" class="w-full bg-white/5 text-gray-500 font-bold py-2.5 rounded-xl text-xs border border-white/5 hover:bg-red-400/10 hover:text-red-400 transition-all">
+                    Supprimer
+                </button>
+            </form>
+        <% } %>
+    </div>
+</div>

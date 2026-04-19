@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KuronaBot Builder - Plateforme Open Source</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        gold: '#d4a373',
+                        dark: '#121417',
+                        'dark-card': '#1a1d21',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        
+        /* Animation Elastique Dropdown */
+        .dropdown-elastic-enter {
+            transform: translateY(-20px) scale(0.9);
+            opacity: 0;
+        }
+        .dropdown-elastic-enter-active {
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        .dropdown-elastic-enter-to {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+
+        /* Sidebar Curved Indicator */
+        .sidebar-indicator {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 48px;
+            background-color: #121417; /* Same as body bg */
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+            pointer-events: none;
+            z-index: 10;
+        }
+        .sidebar-indicator::before,
+        .sidebar-indicator::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            width: 20px;
+            height: 20px;
+            background-color: transparent;
+            z-index: 11;
+        }
+        .sidebar-indicator::before {
+            top: -20px;
+            border-bottom-right-radius: 20px;
+            box-shadow: 5px 5px 0 5px #121417;
+        }
+        .sidebar-indicator::after {
+            bottom: -20px;
+            border-top-right-radius: 20px;
+            box-shadow: 5px -5px 0 5px #121417;
+        }
+
+        body {
+            background-color: #121417;
+            color: #e5e7eb;
+        }
+    </style>
+</head>
+<body class="flex min-h-screen overflow-x-hidden">
+    
+    <% if (typeof user !== 'undefined' && user) { %>
+        <!-- Sidebar Hamburger -->
+        <aside 
+            x-data="{ expanded: false, activeIndex: <%= typeof activeMenu !== 'undefined' ? (['dashboard', 'bots', 'admin', 'profile'].indexOf(activeMenu) + 1) : 0 %> }" 
+            @mouseenter="expanded = true" 
+            @mouseleave="expanded = false"
+            :class="expanded ? 'w-64 shadow-2xl' : 'w-20'"
+            class="hidden md:flex flex-col bg-[#1a1d21] border-r border-white/5 transition-all duration-300 ease-in-out fixed h-full z-50 group"
+        >
+            <div class="p-6 flex items-center justify-center h-20 border-b border-white/5">
+                <div class="w-10 h-10 bg-gold rounded-xl flex items-center justify-center shadow-lg shadow-gold/20">
+                    <span class="text-dark font-bold text-xl">K</span>
+                </div>
+                <span x-show="expanded" x-transition.opacity class="ml-3 font-bold text-xl tracking-tight text-white whitespace-nowrap">KuronaBot</span>
+            </div>
+
+            <nav class="flex-1 mt-6 relative overflow-hidden">
+                <!-- Curved Indicator -->
+                <div 
+                    x-show="activeIndex > 0"
+                    class="sidebar-indicator" 
+                    :style="`top: ${(activeIndex - 1) * 60 + 24}px`"
+                ></div>
+
+                <div class="space-y-3 px-4 relative z-20">
+                    <a href="/dashboard" @mouseover="activeIndex = 1" class="flex items-center h-12 rounded-xl transition-all duration-300 relative group/item" :class="activeIndex === 1 ? 'text-gold' : 'text-gray-400 hover:text-white'">
+                        <div class="w-12 flex items-center justify-center shrink-0">
+                            <i data-lucide="layout-dashboard"></i>
+                        </div>
+                        <span x-show="expanded" x-transition.opacity.duration.300 class="ml-2 font-medium">Tableau de bord</span>
+                    </a>
+
+                    <a href="/bots/new" @mouseover="activeIndex = 2" class="flex items-center h-12 rounded-xl transition-all duration-300 relative group/item" :class="activeIndex === 2 ? 'text-gold' : 'text-gray-400 hover:text-white'">
+                        <div class="w-12 flex items-center justify-center shrink-0">
+                            <i data-lucide="plus-square"></i>
+                        </div>
+                        <span x-show="expanded" x-transition.opacity.duration.300 class="ml-2 font-medium">Nouveau Bot</span>
+                    </a>
+
+                    <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+                    <a href="/admin" @mouseover="activeIndex = 3" class="flex items-center h-12 rounded-xl transition-all duration-300 relative group/item" :class="activeIndex === 3 ? 'text-gold' : 'text-gray-400 hover:text-white'">
+                        <div class="w-12 flex items-center justify-center shrink-0">
+                            <i data-lucide="shield"></i>
+                        </div>
+                        <span x-show="expanded" x-transition.opacity.duration.300 class="ml-2 font-medium">Administration</span>
+                    </a>
+                    <% } %>
+
+                    <a href="/profile" @mouseover="activeIndex = 4" class="flex items-center h-12 rounded-xl transition-all duration-300 relative group/item" :class="activeIndex === 4 ? 'text-gold' : 'text-gray-400 hover:text-white'">
+                        <div class="w-12 flex items-center justify-center shrink-0">
+                            <i data-lucide="user"></i>
+                        </div>
+                        <span x-show="expanded" x-transition.opacity.duration.300 class="ml-2 font-medium">Mon Profil</span>
+                    </a>
+                </div>
+            </nav>
+
+            <div class="p-4 border-t border-white/5">
+                <a href="/logout" class="flex items-center h-12 rounded-xl text-red-400 hover:bg-red-400/10 transition-all duration-300 px-4">
+                    <div class="w-12 flex items-center justify-center shrink-0">
+                        <i data-lucide="log-out"></i>
+                    </div>
+                    <span x-show="expanded" x-transition.opacity.duration.300 class="ml-2 font-medium">Déconnexion</span>
+                </a>
+            </div>
+        </aside>
+    <% } %>
+
+    <div class="flex-1 flex flex-col <%= (typeof user !== 'undefined' && user) ? 'md:ml-20' : '' %>">
+        <!-- Header -->
+        <header class="h-20 bg-[#121417]/80 backdrop-blur-md border-b border-white/5 sticky top-0 z-40 px-6 flex items-center justify-between">
+            <div class="flex items-center">
+                <a href="/" class="flex items-center md:hidden">
+                    <div class="w-10 h-10 bg-gold rounded-xl flex items-center justify-center">
+                        <span class="text-dark font-bold">K</span>
+                    </div>
+                </a>
+                <h1 class="hidden md:block text-lg font-semibold text-white/90 ml-4"><%= typeof title !== 'undefined' ? title : APP_NAME %></h1>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <% if (typeof user !== 'undefined' && user) { %>
+                    <!-- Profil Dropdown -->
+                    <div x-data="{ open: false }" class="relative">
+                        <button 
+                            @click="open = !open" 
+                            class="flex items-center space-x-3 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl border border-white/10 transition-all duration-300"
+                        >
+                            <div class="w-8 h-8 rounded-full bg-gold/20 flex items-center justify-center text-gold border border-gold/30">
+                                <i data-lucide="user" class="w-4 h-4"></i>
+                            </div>
+                            <span class="text-sm font-medium text-white/80"><%= user.username %></span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 transition-transform duration-300" :class="open ? 'rotate-180' : ''"></i>
+                        </button>
+
+                        <div 
+                            x-show="open" 
+                            x-cloak
+                            @click.away="open = false"
+                            class="absolute right-0 mt-3 w-56 bg-[#1a1d21] border border-white/10 rounded-2xl shadow-2xl p-2 z-50 origin-top-right transition-all duration-400 cubic-bezier"
+                            x-transition:enter="dropdown-elastic-enter-active"
+                            x-transition:enter-start="dropdown-elastic-enter"
+                            x-transition:enter-end="dropdown-elastic-enter-to"
+                        >
+                            <a href="/dashboard" class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-gray-400 hover:text-gold hover:bg-white/5 hover:translate-x-1 transition-all duration-300">
+                                <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                                <span class="text-sm">Dashboard</span>
+                            </a>
+                            <a href="/profile" class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-gray-400 hover:text-gold hover:bg-white/5 hover:translate-x-1 transition-all duration-300">
+                                <i data-lucide="user" class="w-4 h-4"></i>
+                                <span class="text-sm">Profil</span>
+                            </a>
+                            <div class="h-px bg-white/5 my-2"></div>
+                            <a href="/logout" class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-red-400 hover:bg-red-400/10 transition-all duration-300">
+                                <i data-lucide="log-out" class="w-4 h-4"></i>
+                                <span class="text-sm">Déconnexion</span>
+                            </a>
+                        </div>
+                    </div>
+                <% } else { %>
+                    <a href="/login" class="text-sm font-medium text-gray-400 hover:text-white transition-colors">Connexion</a>
+                    <a href="/register" class="bg-gold text-dark font-semibold px-5 py-2.5 rounded-xl hover:scale-105 transition-all shadow-lg shadow-gold/20">S'inscrire</a>
+                <% } %>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="p-6 md:p-10 max-w-7xl mx-auto w-full">
+            <%- body %>
+        </main>
+
+        <!-- Footer -->
+        <footer class="mt-auto py-10 px-6 border-t border-white/5 flex flex-col md:flex-row items-center justify-between text-gray-500 text-sm">
+            <p>&copy; 2026 KuronaBot Builder. Tous droits réservés.</p>
+            <div class="flex space-x-6 mt-4 md:mt-0">
+                <a href="#" class="hover:text-gold transition-colors">Conditions d'utilisation</a>
+                <a href="#" class="hover:text-gold transition-colors">Confidentialité</a>
+                <a href="#" class="hover:text-gold transition-colors">GitHub</a>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

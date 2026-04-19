@@ -1,0 +1,81 @@
+<div class="space-y-10">
+    <!-- Header Dashboard -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+            <h2 class="text-3xl font-bold text-white mb-2">Bienvenue, <%= user.username %> !</h2>
+            <p class="text-gray-500">Gérez vos bots et suivez votre activité depuis cet espace.</p>
+        </div>
+        <a href="/bots/new" class="inline-flex items-center space-x-2 bg-gold text-dark font-bold px-6 py-4 rounded-2xl hover:scale-105 transition-all shadow-xl shadow-gold/20">
+            <i data-lucide="plus" class="w-5 h-5"></i>
+            <span>Nouveau Bot</span>
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <!-- Main Column (Bots) -->
+        <div class="lg:col-span-2 space-y-8">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xl font-bold text-white flex items-center">
+                    <i data-lucide="layout-list" class="w-5 h-5 mr-3 text-gold"></i>
+                    Mes Bots
+                </h3>
+                <span class="text-sm text-gray-500 bg-white/5 px-3 py-1 rounded-full"><%= bots.length %> bot(s)</span>
+            </div>
+
+            <% if (bots.length === 0) { %>
+                <div class="bg-dark-card border border-white/5 border-dashed rounded-[2.5rem] p-20 text-center">
+                    <div class="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-600">
+                        <i data-lucide="bot" class="w-10 h-10"></i>
+                    </div>
+                    <h4 class="text-xl font-semibold text-white mb-2">Aucun bot pour le moment</h4>
+                    <p class="text-gray-500 max-w-xs mx-auto mb-8">Commencez par créer votre premier bot personnalisé en quelques secondes.</p>
+                    <a href="/bots/new" class="text-gold font-bold hover:underline">Créer mon premier bot &rarr;</a>
+                </div>
+            <% } else { %>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <% bots.forEach(bot => { %>
+                        <%- include('partials/bot-card', { bot }) %>
+                    <% }) %>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Sidebar Column (Activity) -->
+        <div class="space-y-8">
+            <div class="bg-dark-card border border-white/5 rounded-[2.5rem] p-8">
+                <h3 class="text-lg font-bold text-white mb-6 flex items-center">
+                    <i data-lucide="history" class="w-5 h-5 mr-3 text-gold"></i>
+                    Activité Récente
+                </h3>
+                
+                <div class="space-y-6">
+                    <% if (logs.length === 0) { %>
+                        <p class="text-center text-gray-600 text-sm py-10">Aucune activité enregistrée.</p>
+                    <% } else { %>
+                        <% logs.forEach(log => { %>
+                            <div class="relative pl-6 pb-6 border-l border-white/10 last:pb-0">
+                                <div class="absolute left-[-5px] top-0 w-[9px] h-[9px] bg-gold rounded-full shadow-[0_0_10px_rgba(212,163,115,0.5)]"></div>
+                                <div class="space-y-1">
+                                    <p class="text-sm text-white/90 font-medium"><%= log.action %></p>
+                                    <p class="text-xs text-gray-500 line-clamp-2"><%= log.details %></p>
+                                    <p class="text-[10px] text-gray-600 font-mono uppercase mt-1">
+                                        <%= new Date(log.createdAt).toLocaleString('fr-FR') %>
+                                    </p>
+                                </div>
+                            </div>
+                        <% }) %>
+                    <% } %>
+                </div>
+            </div>
+
+            <div class="bg-gold/5 border border-gold/10 rounded-[2rem] p-8 text-center">
+                <div class="w-14 h-14 bg-gold/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-gold">
+                    <i data-lucide="help-circle"></i>
+                </div>
+                <h4 class="text-white font-bold mb-2">Besoin d'aide ?</h4>
+                <p class="text-gray-400 text-sm mb-4 leading-relaxed">Consultez notre documentation ou rejoignez le groupe WhatsApp officiel.</p>
+                <a href="#" class="inline-block text-gold text-sm font-bold hover:underline">Accéder au support &rarr;</a>
+            </div>
+        </div>
+    </div>
+</div>

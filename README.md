@@ -1,11 +1,28 @@
-<div align="center">
+# KuronaBot Builder
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+Plateforme open source permettant de créer et gérer vos propres bots WhatsApp basés sur Baileys.
 
-  <h1>Built with AI Studio</h2>
+## 🚀 Installation
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+1. Installez les dépendances :
+   ```bash
+   npm install
+   ```
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+2. Configurez les variables d'environnement :
+   Copiez `.env.example` en `.env` et remplissez vos informations.
 
-</div>
+3. Lancez le serveur :
+   ```bash
+   npm run dev
+   ```
+
+## 🔐 Administration
+
+Pour créer le premier administrateur, inscrivez-vous normalement, puis ouvrez votre base de données `database.sqlite` (avec DB Browser for SQLite par exemple) et changez le champ `role` de votre utilisateur à `admin`.
+
+## ⚙️ Configuration requise
+
+- Node.js 20+
+- SQLite3
+- Un compte Gmail (ou autre SMTP) pour l'envoi d'emails (optionnel pour la démo local).
