@@ -1,0 +1,148 @@
+<div class="space-y-16 py-8" x-data="{
+    selectedPlan: 'pro_monthly',
+    processing: false,
+    async initializePayment(provider) {
+        this.processing = true;
+        try {
+            const res = await fetch('/api/payment/initialize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ provider, planId: this.selectedPlan })
+            });
+            const data = await res.json();
+            if(data.success && data.redirectUrl) {
+                window.location.href = data.redirectUrl;
+            } else {
+                alert(data.message || 'Erreur lors de l\'initialisation');
+            }
+        } catch (e) {
+            alert('Échec de la communication avec le serveur de paiement.');
+        } finally {
+            this.processing = false;
+        }
+    }
+}">
+    <div class="text-center space-y-4 px-2">
+        <div class="inline-flex items-center space-x-3 glass px-5 py-2 rounded-full border border-gold/20 mb-4">
+            <i data-lucide="crown" class="w-4 h-4 text-gold"></i>
+            <span class="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Protocole d'Élévation Platinium</span>
+        </div>
+        <h2 class="text-5xl md:text-6xl font-black text-white tracking-tighter">Choisissez votre <span class="gold-gradient-text italic">Puissance</span></h2>
+        <p class="text-gray-500 font-medium text-lg max-w-2xl mx-auto leading-relaxed">Libérez tout le potentiel du réseau Kurona en déverrouillant les algorithmes Pro et la suppression des limites gratuites.</p>
+    </div>
+
+    <!-- Plan Selection -->
+    <div class="flex flex-col md:flex-row items-center justify-center gap-8 px-4">
+        <!-- Monthly -->
+        <div @click="selectedPlan = 'pro_monthly'" 
+             class="w-full max-w-sm glass p-10 rounded-[3.5rem] border-2 transition-all duration-500 cursor-pointer relative group"
+             :class="selectedPlan === 'pro_monthly' ? 'border-gold shadow-[0_30px_80px_rgba(212,163,115,0.2)] scale-105' : 'border-white/5 opacity-50 hover:opacity-100'">
+            <div class="absolute inset-0 bg-gold/5 opacity-0 group-hover:opacity-100 transition-all rounded-[3.5rem]"></div>
+            <div class="relative z-10 text-center">
+                <h3 class="text-xl font-black text-white uppercase tracking-widest mb-2">Pro Mensuel</h3>
+                <div class="py-6">
+                    <span class="text-4xl font-black text-white">5.000</span>
+                    <span class="text-gold font-black ml-1 uppercase text-xs">FCFA / mois</span>
+                </div>
+                <div class="space-y-4 mb-10 text-left">
+                    <div class="flex items-center text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                        <i data-lucide="check" class="w-4 h-4 text-gold mr-3"></i> Accès à 100% des algorithmes
+                    </div>
+                    <div class="flex items-center text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                        <i data-lucide="check" class="w-4 h-4 text-gold mr-3"></i> Commandes illimitées
+                    </div>
+                    <div class="flex items-center text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                        <i data-lucide="check" class="w-4 h-4 text-gold mr-3"></i> Support prioritaire
+                    </div>
+                </div>
+                <div class="w-full h-2 glass rounded-full overflow-hidden">
+                    <div class="h-full bg-gold transition-all" :class="selectedPlan === 'pro_monthly' ? 'w-full' : 'w-0'"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Yearly -->
+        <div @click="selectedPlan = 'pro_yearly'" 
+             class="w-full max-w-sm glass p-10 rounded-[3.5rem] border-2 transition-all duration-500 cursor-pointer relative group"
+             :class="selectedPlan === 'pro_yearly' ? 'border-gold shadow-[0_30px_80px_rgba(212,163,115,0.2)] scale-105' : 'border-white/5 opacity-50 hover:opacity-100'">
+            <div class="absolute -top-4 right-10 bg-gold text-dark font-black text-[9px] px-5 py-2 rounded-full uppercase tracking-widest shadow-lg">Incontournable</div>
+            <div class="relative z-10 text-center">
+                <h3 class="text-xl font-black text-white uppercase tracking-widest mb-2">Pro Annuel</h3>
+                <div class="py-6">
+                    <span class="text-4xl font-black text-white">50.000</span>
+                    <span class="text-gold font-black ml-1 uppercase text-xs">FCFA / an</span>
+                </div>
+                <div class="space-y-4 mb-10 text-left">
+                    <div class="flex items-center text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                        <i data-lucide="zap" class="w-4 h-4 text-gold mr-3"></i> Inclut tous les avantages Pro
+                    </div>
+                    <div class="flex items-center text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                        <i data-lucide="zap" class="w-4 h-4 text-gold mr-3"></i> Économie de 10.000 FCFA
+                    </div>
+                    <div class="flex items-center text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                        <i data-lucide="zap" class="w-4 h-4 text-gold mr-3"></i> Badge Architecte Fondateur
+                    </div>
+                </div>
+                <div class="w-full h-2 glass rounded-full overflow-hidden">
+                    <div class="h-full bg-gold transition-all" :class="selectedPlan === 'pro_yearly' ? 'w-full' : 'w-0'"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Provider Selection -->
+    <div class="max-w-6xl mx-auto pt-16" x-show="selectedPlan" x-cloak x-transition>
+        <div class="text-center mb-10">
+            <h4 class="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] mb-4">Canaux de Transaction Sécurisés</h4>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-6 px-4">
+            <!-- MTN -->
+            <button @click="initializePayment('mtn')" :disabled="processing"
+                    class="group relative flex flex-col items-center justify-center p-8 rounded-[2.5rem] border-2 border-transparent transition-all hover:scale-105 overflow-hidden shadow-2xl"
+                    style="background-color: #FFC000;">
+                <img src="https://logowik.com/content/uploads/images/mtn-group2117.jpg" class="w-16 h-16 rounded-2xl mb-4 shadow-lg group-hover:scale-110 transition-transform">
+                <span class="text-dark font-black text-[10px] uppercase tracking-widest">Payer avec MTN</span>
+                <div class="absolute inset-x-0 bottom-0 h-1 bg-black/20 group-hover:bg-black/40"></div>
+            </button>
+
+            <!-- Orange -->
+            <button @click="initializePayment('orange')" :disabled="processing"
+                    class="group relative flex flex-col items-center justify-center p-8 rounded-[2.5rem] border-2 border-transparent transition-all hover:scale-105 overflow-hidden shadow-2xl"
+                    style="background-color: #FF6600;">
+                <img src="https://static.brandirectory.com/logos/orange-money.jpg" class="w-16 h-16 rounded-2xl mb-4 shadow-lg group-hover:scale-110 transition-transform">
+                <span class="text-white font-black text-[10px] uppercase tracking-widest">Orange Money</span>
+                <div class="absolute inset-x-0 bottom-0 h-1 bg-white/10 group-hover:bg-white/20"></div>
+            </button>
+
+            <!-- Wave -->
+            <button @click="initializePayment('wave')" :disabled="processing"
+                    class="group relative flex flex-col items-center justify-center p-8 rounded-[2.5rem] border-2 border-transparent transition-all hover:scale-105 overflow-hidden shadow-2xl"
+                    style="background-color: #1E90FF;">
+                <img src="https://is1-ssl.mzstatic.com/image/thumb/Purple116/v4/4b/96/cc/4b96cc96-3c73-44b4-f3c5-927161bca03f/AppIcon-0-0-1x_U007emarketing-0-0-0-10-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-10.png/512x512bb.jpg" class="w-16 h-16 rounded-2xl mb-4 shadow-lg group-hover:scale-110 transition-transform">
+                <span class="text-white font-black text-[10px] uppercase tracking-widest">Payer avec Wave</span>
+                <div class="absolute inset-x-0 bottom-0 h-1 bg-white/10 group-hover:bg-white/20"></div>
+            </button>
+
+            <!-- MoneyFusion -->
+            <button @click="initializePayment('moneyfusion')" :disabled="processing"
+                    class="group relative flex flex-col items-center justify-center p-8 rounded-[2.5rem] border-2 border-transparent transition-all hover:scale-105 overflow-hidden shadow-2xl text-center"
+                    style="background-color: #6A0DAD;">
+                <div class="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-4 text-white group-hover:scale-110 transition-transform">
+                    <i data-lucide="layers" class="w-8 h-8"></i>
+                </div>
+                <span class="text-white font-black text-[10px] uppercase tracking-widest leading-tight">MoneyFusion Agrégateur</span>
+                <div class="absolute inset-x-0 bottom-0 h-1 bg-white/10 group-hover:bg-white/20"></div>
+            </button>
+
+            <!-- PayPal -->
+            <button @click="initializePayment('paypal')" :disabled="processing"
+                    class="group relative flex flex-col items-center justify-center p-8 rounded-[2.5rem] border-2 border-transparent transition-all hover:scale-105 overflow-hidden shadow-2xl"
+                    style="background-color: #0070BA;">
+                <img src="https://pngimg.com/uploads/paypal/paypal_PNG22.png" class="w-16 h-16 object-contain mb-4 group-hover:scale-110 transition-transform grayscale brightness-200">
+                <span class="text-white font-black text-[10px] uppercase tracking-widest">PayPal Global</span>
+                <div class="absolute inset-x-0 bottom-0 h-1 bg-white/10 group-hover:bg-white/20"></div>
+            </button>
+        </div>
+    </div>
+</div>

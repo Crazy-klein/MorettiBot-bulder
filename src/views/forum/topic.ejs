@@ -1,0 +1,124 @@
+<div class="max-w-4xl mx-auto space-y-10" x-data="{ 
+    reportingReplyId: null,
+    async reportReply(reason) {
+        if(!reason) return;
+        const res = await fetch(`/forum/reply/${this.reportingReplyId}/report`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason })
+        });
+        if(res.ok) alert('Signalement transmis au centre de contrôle.');
+        this.reportingReplyId = null;
+    }
+}">
+    <div class="flex items-center justify-between px-2">
+        <div class="flex items-center space-x-6">
+            <a href="/forum" class="w-12 h-12 glass rounded-2xl flex items-center justify-center text-gray-400 hover:text-gold transition-all">
+                <i data-lucide="arrow-left" class="w-6 h-6"></i>
+            </a>
+            <div>
+                <h2 class="text-3xl font-black text-white tracking-tight leading-none truncate max-w-md"><%= topic.title %></h2>
+                <p class="text-[9px] font-black text-gray-600 uppercase tracking-widest mt-2 flex items-center">
+                    <span class="text-gold mr-2">Initiateur: @<%= topic.username %></span>
+                    <span class="mx-2">•</span>
+                    <span><%= topic.views %> Vues synchronisées</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Topic Core Message -->
+    <div class="glass p-10 rounded-[3.5rem] border border-gold/10 relative overflow-hidden shadow-2xl">
+        <div class="absolute -top-10 -left-10 w-40 h-40 bg-gold/5 rounded-full blur-3xl"></div>
+        <div class="relative z-10 flex items-start space-x-8">
+            <div class="w-16 h-16 rounded-[1.2rem] bg-gold/10 border border-gold/20 flex items-center justify-center text-gold font-black text-xl shadow-inner">
+                <%= topic.username ? topic.username.substring(0, 1).toUpperCase() : '?' %>
+            </div>
+            <div class="flex-1">
+                <div class="text-gray-300 font-medium leading-[1.8] text-lg whitespace-pre-line"><%= topic.content %></div>
+                <div class="w-full h-px bg-white/5 my-8"></div>
+                <span class="text-[9px] font-black text-gray-600 uppercase tracking-widest">Posté le <%= new Date(topic.createdAt).toLocaleString('fr-FR') %></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Replies - WhatsApp Style -->
+    <div class="space-y-12 pl-4 md:pl-10">
+        <div class="flex items-center space-x-4 mb-2">
+            <div class="w-px h-6 bg-gold/30"></div>
+            <h4 class="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Flux de Réponses (<%= replies.length %>)</h4>
+        </div>
+
+        <% replies.forEach(reply => { %>
+            <% const isMe = user && reply.userId === user.id; %>
+            <div class="flex <%= isMe ? 'justify-end' : 'justify-start' %> group relative animate-fade-in">
+                
+                <div class="flex <%= isMe ? 'flex-row-reverse' : 'flex-row' %> items-start max-w-[85%]">
+                    <!-- Avatar -->
+                    <div class="w-11 h-11 shrink-0 rounded-full flex items-center justify-center text-white font-black text-sm border-2 border-[#0B0E14] shadow-lg relative z-20 <%= isMe ? 'ml-4' : 'mr-4' %>" 
+                         style="background-color: hsl(<%= reply.username.length * 45 %>, 60%, 40%)">
+                        <%= reply.username.substring(0, 1).toUpperCase() %>
+                    </div>
+
+                    <!-- Bubble Container -->
+                    <div class="flex flex-col <%= isMe ? 'items-end' : 'items-start' %>">
+                        <span class="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1 mx-1"><%= reply.username %></span>
+                        
+                        <div class="relative group/bubble">
+                            <div class="p-6 rounded-[1.8rem] shadow-xl text-sm leading-relaxed transition-all duration-300 
+                                <%= isMe ? 'bg-gold text-dark font-black rounded-tr-none' : 'glass-dark bg-[#1E2A3A] text-gray-200 border border-white/5 rounded-tl-none' %>">
+                                <%= reply.content %>
+                                
+                                <div class="mt-3 flex items-center justify-end">
+                                    <span class="text-[8px] font-black opacity-50 uppercase tracking-tighter">
+                                        <%= new Date(reply.createdAt).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}) %>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Actions Menu (Floating dots) -->
+                            <div class="absolute top-2 <%= isMe ? 'left-[-40px]' : 'right-[-40px]' %> opacity-0 group-hover/bubble:opacity-100 transition-all">
+                                <button @click="reportingReplyId = <%= reply.id %>" class="w-8 h-8 glass rounded-full flex items-center justify-center text-gray-600 hover:text-red-500 border border-white/5">
+                                    <i data-lucide="more-horizontal" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <% }) %>
+    </div>
+
+    <!-- Reply Input -->
+    <% if (user) { %>
+        <div class="pt-10 sticky bottom-4 z-40 px-2">
+            <form action="/forum/topic/<%= topic.id %>/reply" method="POST" class="glass p-3 rounded-[2.5rem] border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.6)] flex items-center space-x-4">
+                <div class="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-gray-600">
+                    <i data-lucide="smile" class="w-6 h-6"></i>
+                </div>
+                <input type="text" name="content" required placeholder="Tapez votre réponse cryptée..." class="flex-1 bg-transparent border-0 focus:outline-none text-white font-medium placeholder:text-gray-700">
+                <button type="submit" class="w-14 h-14 bg-gold text-dark rounded-full flex items-center justify-center hover:scale-105 active:scale-90 transition-all shadow-lg shadow-gold/20">
+                    <i data-lucide="send" class="w-6 h-6"></i>
+                </button>
+            </form>
+        </div>
+    <% } %>
+
+    <!-- Report Modal -->
+    <div x-show="reportingReplyId" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md px-4" x-cloak>
+        <div class="glass p-10 rounded-[3rem] border border-white/10 max-w-sm w-full shadow-2xl" @click.away="reportingReplyId = null">
+            <h3 class="text-xl font-black text-white uppercase tracking-wider mb-2">Signaler Contenu</h3>
+            <p class="text-xs text-gray-500 font-medium mb-8">Les violations du protocole Kurona sont traitées avec sévérité.</p>
+            
+            <div class="space-y-4">
+                <template x-for="reason in ['Spam', 'Harcèlement', 'Contenu Inapproprié', 'Haine']">
+                    <button @click="reportReply(reason)" class="w-full text-left p-4 rounded-2xl glass hover:bg-red-500/10 hover:border-red-500/30 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-red-500 transition-all">
+                        <span x-text="reason"></span>
+                    </button>
+                </template>
+            </div>
+            
+            <button @click="reportingReplyId = null" class="w-full mt-8 text-[10px] font-black text-gray-700 uppercase tracking-widest hover:text-white transition-colors">Annuler la procédure</button>
+        </div>
+    </div>
+</div>

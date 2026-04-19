@@ -1,0 +1,91 @@
+<div class="max-w-4xl mx-auto py-8">
+    <div class="mb-12 px-2">
+        <div class="flex items-center space-x-3 mb-3">
+            <div class="w-10 h-10 glass rounded-xl flex items-center justify-center text-gold">
+                <i data-lucide="plus-circle" class="w-5 h-5"></i>
+            </div>
+            <span class="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Transmission Directe</span>
+        </div>
+        <h2 class="text-4xl font-black text-white tracking-tight">Soumettre votre <span class="gold-gradient-text italic">Architecture</span></h2>
+        <p class="text-gray-500 font-medium mt-1">Partagez votre expertise et monétisez vos configurations système avec le réseau.</p>
+    </div>
+
+    <form action="/marketplace/submit" method="POST" enctype="multipart/form-data" class="space-y-10">
+        <!-- Identité du Bot -->
+        <div class="glass p-12 rounded-[3.5rem] border border-white/5 shadow-2xl space-y-8">
+            <h3 class="text-xl font-black text-white uppercase tracking-wider flex items-center">
+                <i data-lucide="info" class="w-6 h-6 mr-4 text-gold"></i>
+                Métadonnées de l'Entité
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div class="space-y-4">
+                    <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Nom du Bot Marketplace</label>
+                    <input type="text" name="name" required class="w-full bg-black/20 border border-white/5 rounded-2xl py-5 px-6 text-white text-lg font-black focus:outline-none focus:border-gold transition-all" placeholder="ex: Ghost-MDX 2.0">
+                </div>
+
+                <div class="space-y-4">
+                    <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Logo Officiel (Carré recommandé)</label>
+                    <label class="flex items-center justify-between w-full h-[68px] glass border border-white/5 border-dashed rounded-2xl px-6 cursor-pointer hover:border-gold/30 transition-all">
+                        <span class="text-gray-600 font-black text-[10px] uppercase tracking-widest">Choisir un fichier...</span>
+                        <i data-lucide="upload-cloud" class="w-5 h-5 text-gold"></i>
+                        <input type="file" name="logo" accept="image/*" class="hidden" required>
+                    </label>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Description Technique (Pitch)</label>
+                <textarea name="description" required rows="4" class="w-full bg-black/20 border border-white/5 rounded-3xl py-5 px-6 text-white font-medium focus:outline-none focus:border-gold transition-all resize-none" placeholder="Décrivez les fonctionnalités uniques et l'avantage compétitif de votre bot..."></textarea>
+            </div>
+        </div>
+
+        <!-- Technical specs -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div class="glass p-12 rounded-[3.5rem] border border-white/5 shadow-2xl space-y-8">
+                <h3 class="text-xl font-black text-white uppercase tracking-wider flex items-center">
+                    <i data-lucide="code-2" class="w-6 h-6 mr-4 text-gold"></i>
+                    Spécifications
+                </h3>
+                
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Nombre d'algorithmes (Commandes)</label>
+                    <input type="number" name="commandCount" required class="w-full bg-black/20 border border-white/5 rounded-2xl py-5 px-6 text-white font-black focus:outline-none focus:border-gold transition-all" placeholder="ex: 120">
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Prix de la licence (FCFA)</label>
+                    <input type="number" name="price" required class="w-full bg-black/20 border border-white/5 rounded-2xl py-5 px-6 text-gold font-black focus:outline-none focus:border-gold transition-all" placeholder="0 pour gratuit">
+                </div>
+            </div>
+
+            <div class="glass p-12 rounded-[3.5rem] border border-white/5 shadow-2xl space-y-8">
+                <h3 class="text-xl font-black text-white uppercase tracking-wider flex items-center">
+                    <i data-lucide="link" class="w-6 h-6 mr-4 text-gold"></i>
+                    Vecteur de Téléchargement
+                </h3>
+
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Type de plateforme</label>
+                    <select name="downloadType" class="w-full bg-black/20 border border-white/5 rounded-2xl py-5 px-6 text-white font-black focus:outline-none focus:border-gold transition-all appearance-none">
+                        <option value="github">GitHub Repository</option>
+                        <option value="mediafire">Mediafire Archive</option>
+                        <option value="direct">Lien Direct</option>
+                    </select>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">URL de Transmission</label>
+                    <input type="url" name="downloadUrl" required class="w-full bg-black/20 border border-white/5 rounded-2xl py-5 px-6 text-white font-medium focus:outline-none focus:border-gold transition-all" placeholder="https://...">
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-8 flex justify-center">
+            <button type="submit" class="bg-gold text-dark px-16 py-6 rounded-[2.5rem] font-black text-xs uppercase tracking-[0.3em] hover:scale-105 active:scale-95 transition-all shadow-[0_25px_80px_rgba(212,163,115,0.4)] border border-gold-light/20 flex items-center group">
+                <i data-lucide="shield-check" class="w-5 h-5 mr-3 group-hover:rotate-12 transition-transform"></i>
+                Soumettre au Registre
+            </button>
+        </div>
+    </form>
+</div>

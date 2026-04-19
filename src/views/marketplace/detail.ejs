@@ -1,0 +1,96 @@
+<div class="max-w-5xl mx-auto space-y-12">
+    <div class="flex flex-col lg:flex-row items-start gap-12">
+        <!-- Sidebar Image/Price -->
+        <div class="w-full lg:w-1/3 space-y-8">
+            <div class="glass p-4 rounded-[4rem] border border-white/10 shadow-2xl relative overflow-hidden group">
+                <div class="absolute inset-0 bg-gold/5 opacity-0 group-hover:opacity-100 transition-duration-1000"></div>
+                <img src="<%= bot.logo || '/assets/default-bot.png' %>" class="w-full aspect-square object-cover rounded-[3.5rem] shadow-inner filter brightness-110">
+            </div>
+
+            <div class="glass p-10 rounded-[3.5rem] border border-white/5 space-y-6">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Acquisition</span>
+                    <span class="text-2xl font-black text-gold"><%= bot.price === 0 ? 'Gratuit' : bot.price + ' FCFA' %></span>
+                </div>
+                <a href="<%= bot.downloadUrl %>" target="_blank" class="w-full bg-gold text-dark py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest text-center flex items-center justify-center hover:scale-105 transition-all shadow-xl shadow-gold/20 group">
+                    <i data-lucide="download" class="w-4 h-4 mr-2 group-hover:-translate-y-1 transition-transform"></i>
+                    Obtenir via <%= bot.downloadType.toUpperCase() %>
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Info -->
+        <div class="flex-1 space-y-10">
+            <div class="px-2">
+                <h2 class="text-5xl font-black text-white tracking-tighter mb-4 uppercase"><%= bot.name %></h2>
+                <div class="flex flex-wrap items-center gap-6">
+                    <div class="flex items-center space-x-3 bg-white/5 px-4 py-2 rounded-full border border-white/5">
+                        <i data-lucide="terminal" class="w-4 h-4 text-gold"></i>
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest"><%= bot.commandCount %>+ Algorithmes</span>
+                    </div>
+                    <div class="flex items-center space-x-3 bg-white/5 px-4 py-2 rounded-full border border-white/5">
+                        <i data-lucide="shield" class="w-4 h-4 text-gold"></i>
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Certifié Kurona</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass p-12 rounded-[4rem] border border-white/5 shadow-inner">
+                <h3 class="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] mb-6 underline decoration-gold/30 underline-offset-8">Spécifications Techniques</h3>
+                <div class="prose prose-invert max-w-none">
+                    <p class="text-gray-400 leading-relaxed font-medium text-lg whitespace-pre-line"><%= bot.description %></p>
+                </div>
+            </div>
+
+            <!-- Reviews Section -->
+            <div class="space-y-8">
+                <div class="flex items-center justify-between px-4">
+                    <h3 class="text-xl font-black text-white uppercase tracking-wider">Retours d'Expérience</h3>
+                    <div class="flex items-center text-gold space-x-2">
+                        <i data-lucide="star" class="w-5 h-5 fill-gold"></i>
+                        <span class="font-black text-lg">4.8</span>
+                    </div>
+                </div>
+
+                <% if (user) { %>
+                    <form action="/marketplace/<%= bot.id %>/review" method="POST" class="glass p-8 rounded-[3rem] border border-white/5 space-y-6">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-black text-gray-600 uppercase tracking-widest">Votre Évaluation</span>
+                            <div class="flex items-center space-x-2" x-data="{ r: 5 }">
+                                <template x-for="i in 5">
+                                    <button type="button" @click="r = i" class="text-gray-700 hover:text-gold transition-colors">
+                                        <i data-lucide="star" class="w-6 h-6" :class="i <= r ? 'fill-gold text-gold' : ''"></i>
+                                    </button>
+                                </template>
+                                <input type="hidden" name="rating" :value="r">
+                            </div>
+                        </div>
+                        <textarea name="comment" required rows="2" class="w-full bg-black/20 border border-white/5 rounded-2xl py-4 px-6 text-white text-sm focus:outline-none focus:border-gold transition-all" placeholder="Laissez un avis sur cette instance..."></textarea>
+                        <button type="submit" class="bg-white/5 text-white border border-white/10 px-8 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-gold hover:text-dark hover:border-gold transition-all">Publier le retour</button>
+                    </form>
+                <% } %>
+
+                <div class="space-y-4">
+                    <% reviews.forEach(review => { %>
+                        <div class="glass p-8 rounded-[2.5rem] border border-white/5 flex items-start space-x-6">
+                            <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-gray-500 font-black text-sm uppercase">
+                                <%= review.username.substring(0, 1) %>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm font-black text-white uppercase tracking-tight">@<%= review.username %></span>
+                                    <div class="flex items-center text-gold scale-75">
+                                        <% for(let i=0; i<5; i++) { %>
+                                            <i data-lucide="star" class="w-3 h-3 <%= i < review.rating ? 'fill-gold' : 'text-gray-800' %>"></i>
+                                        <% } %>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-500 italic"><%= review.comment %></p>
+                            </div>
+                        </div>
+                    <% }) %>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

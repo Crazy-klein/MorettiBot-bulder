@@ -6,6 +6,9 @@ import { SessionManager } from '../services/sessionManager.js';
 import { BotGenerator } from '../services/botGenerator.js';
 import { NotificationModel } from '../models/Notification.js';
 import { BotBackupModel } from '../models/BotBackup.js';
+import { SubscriptionModel } from '../models/Subscription.js';
+import { CommandModel } from '../models/Command.js';
+import { SettingModel } from '../models/Setting.js';
 import logger from '../utils/logger.js';
 import { z } from 'zod';
 import path from 'path';
@@ -61,13 +64,35 @@ router.post('/api/bots/generate', isAuthenticated, generationLimiter, async (req
     ActionLogModel.create(userId, 'Génération de bot', `Le bot ${data.name} a été généré.`);
     NotificationModel.create(userId, 'Génération réussie', `Votre bot "${data.name}" a été généré avec succès.`, 'success');
 
+    // FILTRAGE DES COMMANDES SELON L'ABONNEMENT
+    const subscription = SubscriptionModel.findByUserId(userId);
+    const plan = subscription?.plan || 'free';
+    let modulesToInclude = data.modules || [];
+
+    if (plan === 'free') {
+        const freeLimit = parseInt(SettingModel.get('free_commands_limit') || '52');
+        const activeFreeCommands = CommandModel.findFreeActive();
+        // Filtrer les modules demandés pour ne garder que ceux qui sont actifs et gratuits
+        // Pour simplifier, on vérifie si la commande associée au module est gratuite
+        // Ici on va supposer que 'modules' contient des clés techniques de commandes
+        modulesToInclude = modulesToInclude.filter(m => activeFreeCommands.some(c => c.key === m));
+        // Appliquer la limite
+        if (modulesToInclude.length > freeLimit) {
+            modulesToInclude = modulesToInclude.slice(0, freeLimit);
+        }
+    } else {
+        // Plan PRO: Toutes les commandes actives
+        const activeCommands = CommandModel.findActive();
+        modulesToInclude = modulesToInclude.filter(m => activeCommands.some(c => c.key === m));
+    }
+
     const zipPath = await BotGenerator.generateZip({
       name: data.name,
       type: data.type,
       prefix: data.prefix,
       ownerName: data.ownerName,
       ownerNumber: data.ownerNumber,
-      modules: data.modules || []
+      modules: modulesToInclude
     });
 
     // Sécurité : Vérifier le chemin du ZIP

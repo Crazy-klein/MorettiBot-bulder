@@ -43,17 +43,16 @@ export const config = {
 `;
     await fs.writeFile(configFilePath, configContent);
 
-    // Supprimer les modules non activés (facultatif mais recommandé pour la taille)
+    // Supprimer les modules non autorisés du template
     const commandsDir = path.join(tempDir, 'src/commands');
-    const allModules = ['ai', 'downloader', 'tools', 'group']; // Exemple de noms de dossiers
-    
-    for (const module of allModules) {
-      if (!botConfig.modules.includes(module)) {
-        const modulePath = path.join(commandsDir, module);
-        if (await fs.pathExists(modulePath)) {
-          await fs.remove(modulePath);
+    if (await fs.pathExists(commandsDir)) {
+        const files = await fs.readdir(commandsDir);
+        for (const file of files) {
+            const moduleKey = file.split('.')[0];
+            if (!botConfig.modules.includes(moduleKey)) {
+                await fs.remove(path.join(commandsDir, file));
+            }
         }
-      }
     }
 
     // Créer le ZIP

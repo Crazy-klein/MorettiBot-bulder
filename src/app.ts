@@ -16,6 +16,9 @@ import botRoutes from './routes/bots.js';
 import adminRoutes from './routes/admin.js';
 import profileRoutes from './routes/profile.js';
 import notificationRoutes from './routes/api/notifications.js';
+import paymentRoutes from './routes/payments.js';
+import marketplaceRoutes from './routes/marketplace.js';
+import forumRoutes from './routes/forum.js';
 
 // Config
 import { SESSION_SECRET, BOT_TYPES, APP_NAME } from './config/constants.js';
@@ -32,7 +35,14 @@ const SQLite = SQLiteStore(session);
 const isProd = process.env.NODE_ENV === 'production';
 
 // Création des dossiers nécessaires
-const dirs = ['temp', 'sessions', 'bot-template/src/commands', 'bot-template/src/handlers', 'bot-template/src/lib'];
+const dirs = [
+  'temp', 
+  'sessions', 
+  'bot-template/src/commands', 
+  'bot-template/src/handlers', 
+  'bot-template/src/lib',
+  'public/uploads/logos'
+];
 for (const dir of dirs) {
   fs.ensureDirSync(path.join(__dirname, '..', dir));
 }
@@ -105,6 +115,9 @@ app.use(botRoutes);
 app.use(adminRoutes);
 app.use(profileRoutes);
 app.use(notificationRoutes);
+app.use(paymentRoutes);
+app.use(marketplaceRoutes);
+app.use(forumRoutes);
 
 // Gestion des erreurs 404
 app.use((req, res) => {
