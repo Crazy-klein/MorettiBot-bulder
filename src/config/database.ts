@@ -19,6 +19,8 @@ db.exec(`
     password TEXT NOT NULL,
     username TEXT NOT NULL,
     role TEXT DEFAULT 'user',
+    githubAccessToken TEXT,
+    githubUsername TEXT,
     resetPasswordToken TEXT,
     resetPasswordExpires DATETIME,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,

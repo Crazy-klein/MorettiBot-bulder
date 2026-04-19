@@ -17,6 +17,7 @@ import notificationRoutes from './routes/api/notifications.js';
 
 // Config
 import { SESSION_SECRET, BOT_TYPES, APP_NAME } from './config/constants.js';
+import db from './config/database.js';
 
 dotenv.config();
 
@@ -92,4 +93,16 @@ app.use((err: any, req: any, res: any, next: any) => {
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server KuronaBot running on http://localhost:${PORT}`);
+  
+  // Nettoyage au démarrage : on marque tous les bots 'running' comme 'stopped'
+  // car les processus sockets sont morts au redémarrage serveur
+  try {
+    const bots = db.prepare("SELECT id FROM bots WHERE status = 'running'").all() as { id: number }[];
+    bots.forEach(bot => {
+      db.prepare("UPDATE bots SET status = 'stopped' WHERE id = ?").run(bot.id);
+    });
+    if (bots.length > 0) {
+      console.log(`[Startup] ${bots.length} sessions zombies ont été nettoyées.`);
+    }
+  } catch (e) {}
 });

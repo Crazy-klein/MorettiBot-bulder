@@ -1,0 +1,143 @@
+<!-- GitHub Push Modal -->
+<div 
+    x-data="{ 
+        isOpen: false, 
+        botId: null, 
+        botName: '', 
+        repoName: '', 
+        isPrivate: true, 
+        isPushing: false,
+        error: '',
+        successUrl: '',
+        open(data) {
+            this.botId = data.botId;
+            this.botName = data.botName;
+            this.repoName = data.botName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+            this.isOpen = true;
+            this.isPushing = false;
+            this.error = '';
+            this.successUrl = '';
+        },
+        async push() {
+            this.isPushing = true;
+            this.error = '';
+            try {
+                const res = await fetch(`/api/bots/${this.botId}/push-to-github`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ repoName: this.repoName, isPrivate: this.isPrivate })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.successUrl = data.url;
+                } else {
+                    this.error = data.error;
+                }
+            } catch (err) {
+                this.error = 'Échec de la connexion au serveur';
+            } finally {
+                this.isPushing = false;
+            }
+        }
+    }" 
+    @open-github-modal.window="open($event.detail)"
+    x-show="isOpen" 
+    x-cloak
+    class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-dark/80 backdrop-blur-sm"
+>
+    <div 
+        @click.away="isOpen = false"
+        x-transition:enter="transition ease-out duration-300 transform"
+        x-transition:enter-start="opacity-0 scale-95"
+        x-transition:enter-end="opacity-100 scale-100"
+        class="bg-dark-card border border-white/10 w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden"
+    >
+        <!-- Succès -->
+        <template x-if="successUrl">
+            <div class="text-center py-6">
+                <div class="w-20 h-20 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-green-500/30">
+                    <i data-lucide="check" class="w-10 h-10"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-2">Déploiement réussi !</h3>
+                <p class="text-gray-500 mb-8">Votre code a été poussé avec succès sur GitHub.</p>
+                <div class="flex flex-col space-y-3">
+                    <a :href="successUrl" target="_blank" class="bg-gold text-dark font-bold py-4 rounded-2xl flex items-center justify-center">
+                        <i data-lucide="external-link" class="w-4 h-4 mr-2"></i>
+                        Voir sur GitHub
+                    </a>
+                    <button @click="isOpen = false" class="text-gray-500 font-bold py-2 hover:text-white transition-colors">Fermer</button>
+                </div>
+            </div>
+        </template>
+
+        <!-- Formulaire -->
+        <template x-if="!successUrl">
+            <div class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-[#24292e] rounded-xl flex items-center justify-center text-white">
+                            <i data-lucide="github" class="w-5 h-5"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white">Déployer sur GitHub</h3>
+                    </div>
+                    <button @click="isOpen = false" class="text-gray-600 hover:text-white transition-colors">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+
+                <div class="bg-white/5 p-4 rounded-2xl border border-white/5">
+                    <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">Bot sélectionné</p>
+                    <p class="text-gold font-bold" x-text="botName"></p>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Nom du dépôt</label>
+                        <input 
+                            type="text" 
+                            x-model="repoName"
+                            class="w-full bg-[#121417] border border-white/10 rounded-2xl py-4 px-4 text-white focus:border-gold outline-none transition-all font-mono text-sm"
+                            placeholder="my-awesome-bot"
+                        >
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-[#121417] border border-white/10 rounded-2xl">
+                        <div>
+                            <p class="text-sm font-bold text-white">Dépôt Privé</p>
+                            <p class="text-[10px] text-gray-500">Visible uniquement par vous.</p>
+                        </div>
+                        <button 
+                            @click="isPrivate = !isPrivate"
+                            class="w-12 h-6 rounded-full transition-colors relative"
+                            :class="isPrivate ? 'bg-gold' : 'bg-gray-700'"
+                        >
+                            <div class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform" :class="isPrivate ? 'translate-x-6' : ''"></div>
+                        </button>
+                    </div>
+                </div>
+
+                <template x-if="error">
+                    <div class="bg-red-400/10 border border-red-400/20 text-red-400 p-3 rounded-xl text-xs flex items-center">
+                        <i data-lucide="alert-circle" class="w-4 h-4 mr-2"></i>
+                        <span x-text="error"></span>
+                    </div>
+                </template>
+
+                <button 
+                    @click="push()" 
+                    :disabled="isPushing"
+                    class="w-full bg-gold text-dark font-bold py-4 rounded-2xl flex items-center justify-center shadow-xl shadow-gold/20 disabled:opacity-50 disabled:cursor-not-allowed group transition-all"
+                >
+                    <span x-show="!isPushing" class="flex items-center">
+                        <i data-lucide="cloud-upload" class="w-4 h-4 mr-2 group-hover:-translate-y-1 transition-transform"></i>
+                        Créer et Pousser sur GitHub
+                    </span>
+                    <span x-show="isPushing" class="flex items-center">
+                        <i data-lucide="refresh-cw" class="w-4 h-4 mr-2 animate-spin"></i>
+                        Déploiement en cours...
+                    </span>
+                </button>
+            </div>
+        </template>
+    </div>
+</div>

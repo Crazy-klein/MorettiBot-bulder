@@ -1,23 +1,31 @@
 <div class="max-w-2xl mx-auto py-6" x-data="{ 
     status: '<%= session.status %>', 
-    qr: '<%= session.qr || '' %>',
+    qrDataUrl: '<%= session.qrDataUrl || '' %>',
+    pairingCode: '<%= session.pairingCode || '' %>',
+    uptimeSeconds: <%= session.uptimeSeconds || 0 %>,
+    lastMessageAt: '<%= session.lastMessageAt || '' %>',
+    connectionAttempts: <%= session.connectionAttempts || 0 %>,
     refresh() {
-        fetch('/api/bots/<%= bot.id %>/status')
+        fetch('/api/bots/<%= bot.id %>/session-status')
             .then(res => res.json())
             .then(data => {
                 this.status = data.status;
-                this.qr = data.qr || '';
+                this.qrDataUrl = data.qrDataUrl || '';
+                this.pairingCode = data.pairingCode || '';
+                this.uptimeSeconds = data.uptimeSeconds || 0;
+                this.lastMessageAt = data.lastMessageAt || '';
+                this.connectionAttempts = data.connectionAttempts || 0;
                 if(this.status === 'connected') {
                     setTimeout(() => window.location.href = '/dashboard', 3000);
                 }
             });
     }
-}" x-init="setInterval(() => refresh(), 5000)">
+}" x-init="setInterval(() => refresh(), 3000)">
     
     <div class="mb-10 text-center">
         <h2 class="text-3xl font-bold text-white mb-2">Session en ligne : <%= bot.name %></h2>
         <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-white/5 border border-white/10 text-gray-400 mt-2">
-            <template x-if="status === 'qr' || status === 'connecting'">
+            <template x-if="['qr', 'pairing', 'connecting', 'disconnected'].includes(status)">
                 <span class="relative flex h-2 w-2 mr-2">
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
                     <span class="relative inline-flex rounded-full h-2 w-2 bg-yellow-400"></span>
@@ -29,7 +37,7 @@
                     <span class="relative inline-flex rounded-full h-2 w-2 bg-green-400"></span>
                 </span>
             </template>
-            <span x-text="status === 'qr' ? 'Attente du scan...' : (status === 'connected' ? 'Connecté !' : 'Initialisation...')"></span>
+            <span x-text="status === 'qr' ? 'Attente Scan QR...' : (status === 'pairing' ? 'Attente Code Appairage...' : (status === 'connected' ? 'Connecté !' : (status === 'connecting' ? 'Initialisation...' : 'Déconnecté')))"></span>
         </div>
     </div>
 
@@ -40,37 +48,70 @@
 
         <div class="relative z-10 flex flex-col items-center">
             
-            <template x-if="status === 'qr' && qr">
-                <div class="space-y-8 flex flex-col items-center">
-                    <div class="p-4 bg-white rounded-3xl shadow-[0_0_50px_rgba(255,255,255,0.1)]">
-                        <img :src="qr" alt="WhatsApp QR Code" class="w-64 h-64">
+            <!-- Monitoring Stats (uniquement si connecté) -->
+            <template x-if="status === 'connected'">
+                <div class="grid grid-cols-3 gap-6 w-full mb-10">
+                    <div class="bg-white/5 p-4 rounded-3xl border border-white/5 text-center">
+                        <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">Durée</p>
+                        <p class="text-white font-mono" x-text="Math.floor(uptimeSeconds / 60) + 'm ' + (uptimeSeconds % 60) + 's'"></p>
                     </div>
-                    <div class="text-center space-y-4">
-                        <p class="text-gray-400 max-w-sm mx-auto leading-relaxed">
-                            Ouvrez WhatsApp sur votre téléphone, allez dans <span class="text-white font-semibold">Appareils liés</span> et scannez ce code.
-                        </p>
-                        <div class="flex items-center justify-center space-x-2 text-[10px] text-gray-600 font-bold uppercase tracking-widest">
-                            <i data-lucide="refresh-cw" class="w-3 h-3 animate-spin"></i>
-                            <span>Actualisation automatique</span>
-                        </div>
+                    <div class="bg-white/5 p-4 rounded-3xl border border-white/5 text-center">
+                        <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">Activité</p>
+                        <p class="text-white font-mono text-[10px]" x-text="lastMessageAt ? new Date(lastMessageAt).toLocaleTimeString() : 'N/A'"></p>
+                    </div>
+                    <div class="bg-white/5 p-4 rounded-3xl border border-white/5 text-center">
+                        <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">Retours</p>
+                        <p class="text-white font-mono" x-text="connectionAttempts"></p>
                     </div>
                 </div>
             </template>
 
+            <!-- Mode Pairing Code -->
+            <template x-if="status === 'pairing' && pairingCode">
+                <div class="space-y-8 flex flex-col items-center w-full">
+                    <p class="text-gray-400 text-center max-w-sm">Entrez ce code sur votre téléphone dans <span class="text-white font-bold">Appareils liés > Utiliser le numéro de téléphone</span>.</p>
+                    
+                    <div class="bg-[#121417] border-2 border-gold/30 p-8 rounded-3xl shadow-[0_0_50px_rgba(212,163,115,0.1)] flex items-center justify-center">
+                        <span class="text-5xl font-black text-gold tracking-[0.2em] font-mono" x-text="pairingCode.match(/.{1,4}/g).join('-')"></span>
+                    </div>
+
+                    <div class="flex items-center space-x-2 text-[10px] text-gray-600 font-bold uppercase tracking-widest">
+                        <i data-lucide="refresh-cw" class="w-3 h-3 animate-spin"></i>
+                        <span>En attente de saisie...</span>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Mode QR Code -->
+            <template x-if="status === 'qr' && qrDataUrl && !pairingCode">
+                <div class="space-y-8 flex flex-col items-center">
+                    <p class="text-gray-400 text-center max-w-sm">Scannez ce QR Code avec votre application WhatsApp.</p>
+                    <div class="p-4 bg-white rounded-3xl shadow-[0_0_50px_rgba(255,255,255,0.1)]">
+                        <img :src="qrDataUrl" alt="WhatsApp QR Code" class="w-64 h-64">
+                    </div>
+                    <div class="flex items-center justify-center space-x-2 text-[10px] text-gray-600 font-bold uppercase tracking-widest">
+                        <i data-lucide="refresh-cw" class="w-3 h-3 animate-spin"></i>
+                        <span>Actualisation automatique</span>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Chargement -->
             <template x-if="status === 'connecting'">
                 <div class="py-20 flex flex-col items-center space-y-6">
                     <div class="w-16 h-16 border-4 border-gold/20 border-t-gold rounded-full animate-spin"></div>
-                    <p class="text-gray-500 font-medium">Initialisation des moteurs Baileys...</p>
+                    <p class="text-gray-500 font-medium font-mono uppercase tracking-widest text-xs">Initialisation Baileys Engine...</p>
                 </div>
             </template>
 
+            <!-- Succès -->
             <template x-if="status === 'connected'">
-                <div class="py-20 flex flex-col items-center space-y-6">
-                    <div class="w-20 h-20 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(74,222,128,0.2)]">
+                <div class="py-20 flex flex-col items-center space-y-6 animate-bounce">
+                    <div class="w-20 h-20 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(74,222,128,0.2)] border-2 border-green-500/30">
                         <i data-lucide="check-circle" class="w-10 h-10"></i>
                     </div>
-                    <h3 class="text-2xl font-bold text-white">Connexion établie !</h3>
-                    <p class="text-gray-500">Redirection vers votre tableau de bord...</p>
+                    <h3 class="text-2xl font-bold text-white uppercase tracking-tighter">Accès Autorisé !</h3>
+                    <p class="text-gray-500 text-sm">Synchronisation en cours, veuillez patienter...</p>
                 </div>
             </template>
         </div>
@@ -78,9 +119,9 @@
 
     <div class="mt-10 flex justify-center">
         <form action="/bots/<%= bot.id %>/stop-session" method="POST">
-            <button type="submit" class="bg-white/5 text-gray-400 hover:text-red-400 font-bold px-8 py-4 rounded-2xl border border-white/5 transition-all text-sm flex items-center">
-                <i data-lucide="x-circle" class="w-4 h-4 mr-2"></i>
-                Annuler et arrêter la session
+            <button type="submit" class="bg-white/5 text-gray-400 hover:text-red-400 font-bold px-8 py-4 rounded-2xl border border-white/5 transition-all text-sm flex items-center group">
+                <i data-lucide="log-out" class="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform"></i>
+                Interrompre et fermer la session
             </button>
         </form>
     </div>

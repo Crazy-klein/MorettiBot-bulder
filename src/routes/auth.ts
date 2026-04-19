@@ -4,9 +4,54 @@ import { UserModel } from '../models/User.js';
 import { AuthService } from '../services/authService.js';
 import { EmailService } from '../services/emailService.js';
 import { isGuest, isAuthenticated } from '../middlewares/auth.js';
+import { EncryptionUtils } from '../utils/encryption.js';
+import axios from 'axios';
 import crypto from 'crypto';
+import logger from '../utils/logger.js';
 
 const router = express.Router();
+
+const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
+const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
+
+router.get('/auth/github', isAuthenticated, (req, res) => {
+  const url = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=repo,user:email`;
+  res.redirect(url);
+});
+
+router.get('/auth/github/callback', isAuthenticated, async (req, res) => {
+  const { code } = req.query;
+  const userId = (req.session as any).userId;
+
+  try {
+    const tokenRes = await axios.post('https://github.com/login/oauth/access_token', {
+      client_id: GITHUB_CLIENT_ID,
+      client_secret: GITHUB_CLIENT_SECRET,
+      code
+    }, { headers: { Accept: 'application/json' } });
+
+    const accessToken = tokenRes.data.access_token;
+    
+    const userRes = await axios.get('https://api.github.com/user', {
+      headers: { Authorization: `token ${accessToken}`, 'User-Agent': 'KuronaBot-Builder' }
+    });
+
+    const encryptedToken = EncryptionUtils.encrypt(accessToken);
+    UserModel.setGithubToken(userId, encryptedToken, userRes.data.login);
+
+    logger.info({ userId }, 'GitHub lié avec succès');
+    res.redirect('/profile?github=success');
+  } catch (err) {
+    logger.error({ err }, 'Erreur OAuth GitHub');
+    res.redirect('/profile?github=error');
+  }
+});
+
+router.get('/auth/github/disconnect', isAuthenticated, (req, res) => {
+  const userId = (req.session as any).userId;
+  UserModel.clearGithubToken(userId);
+  res.redirect('/profile');
+});
 
 const registerSchema = z.object({
   username: z.string().min(3, "Le nom d'utilisateur doit contenir au moins 3 caractères"),
@@ -19,7 +64,7 @@ const registerSchema = z.object({
 });
 
 router.get('/login', isGuest, (req, res) => {
-  res.render('login', { error: req.query.error });
+  res.render('login', { error: req.query.error, success: req.query.success });
 });
 
 router.post('/login', isGuest, async (req, res) => {
@@ -120,7 +165,7 @@ router.post('/reset-password/:token', isGuest, async (req, res) => {
   UserModel.updatePassword(user.id, hashedPassword);
   UserModel.clearResetToken(user.id);
 
-  res.redirect('/login?success=Mot+de+passe+réinitialisé');
+  res.redirect('/login?success=' + encodeURIComponent('Mot de passe réinitialisé'));
 });
 
 export default router;
