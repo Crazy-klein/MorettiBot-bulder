@@ -13,6 +13,7 @@ import dashboardRoutes from './routes/dashboard.js';
 import botRoutes from './routes/bots.js';
 import adminRoutes from './routes/admin.js';
 import profileRoutes from './routes/profile.js';
+import notificationRoutes from './routes/api/notifications.js';
 
 // Config
 import { SESSION_SECRET, BOT_TYPES, APP_NAME } from './config/constants.js';
@@ -70,6 +71,7 @@ app.use(dashboardRoutes);
 app.use(botRoutes);
 app.use(adminRoutes);
 app.use(profileRoutes);
+app.use(notificationRoutes);
 
 // Gestion des erreurs 404
 app.use((req, res) => {

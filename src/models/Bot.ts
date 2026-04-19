@@ -1,4 +1,5 @@
 import db from '../config/database.js';
+import logger from '../utils/logger.js';
 
 export interface Bot {
   id: number;

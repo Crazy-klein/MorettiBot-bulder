@@ -1,0 +1,60 @@
+<div class="max-w-4xl mx-auto py-10 space-y-10">
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-3xl font-bold text-white mb-2">Centre de Notifications</h2>
+            <p class="text-gray-500">Retrouvez ici tous les événements importants liés à votre compte et vos bots.</p>
+        </div>
+        <form action="/api/notifications/mark-read" method="POST">
+            <button type="submit" class="bg-white/5 text-gray-400 hover:text-white px-6 py-3 rounded-2xl border border-white/10 transition-all font-medium flex items-center">
+                <i data-lucide="check-square" class="w-4 h-4 mr-2"></i>
+                Tout marquer comme lu
+            </button>
+        </form>
+    </div>
+
+    <div class="bg-dark-card border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
+        <div class="divide-y divide-white/[0.05]">
+            <% if (notifications.length === 0) { %>
+                <div class="p-20 text-center">
+                    <div class="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-600">
+                        <i data-lucide="bell" class="w-10 h-10"></i>
+                    </div>
+                    <h4 class="text-xl font-semibold text-white mb-2">Aucune notification</h4>
+                    <p class="text-gray-500 max-w-xs mx-auto">Vous recevrez des alertes ici lors du démarrage de vos bots ou en cas d'erreur.</p>
+                </div>
+            <% } else { %>
+                <% notifications.forEach(notif => { %>
+                    <div class="p-8 flex items-start space-x-6 transition-all group <%= notif.isRead ? 'opacity-50' : 'bg-gold/[0.02]' %>">
+                        <div class="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 <%= 
+                            notif.type === 'success' ? 'bg-green-500/10 text-green-400' : 
+                            (notif.type === 'error' ? 'bg-red-500/10 text-red-400' : 
+                            (notif.type === 'warning' ? 'bg-yellow-500/10 text-yellow-400' : 'bg-blue-500/10 text-blue-400')) 
+                        %>">
+                            <i data-lucide="<%= notif.type === 'success' ? 'check-circle' : (notif.type === 'error' ? 'alert-octagon' : 'info') %>" class="w-7 h-7"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="text-xl font-bold text-white"><%= notif.title %></h4>
+                                <span class="text-xs text-gray-600 font-mono uppercase"><%= new Date(notif.createdAt).toLocaleString('fr-FR') %></span>
+                            </div>
+                            <p class="text-gray-400 leading-relaxed mb-4"><%= notif.message %></p>
+                            
+                            <div class="flex items-center space-x-4">
+                                <% if (!notif.isRead) { %>
+                                    <form action="/api/notifications/mark-read" method="POST">
+                                        <input type="hidden" name="id" value="<%= notif.id %>">
+                                        <button type="submit" class="text-[10px] font-bold text-gold uppercase tracking-widest hover:underline">Marquer comme lu</button>
+                                    </form>
+                                <% } %>
+                                <form action="/api/notifications/delete" method="POST" onsubmit="return confirm('Supprimer cette notification ?')">
+                                    <input type="hidden" name="id" value="<%= notif.id %>">
+                                    <button type="submit" class="text-[10px] font-bold text-gray-600 hover:text-red-400 uppercase tracking-widest transition-colors">Supprimer</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                <% }) %>
+            <% } %>
+        </div>
+    </div>
+</div>

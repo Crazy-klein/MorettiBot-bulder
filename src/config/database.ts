@@ -47,6 +47,26 @@ db.exec(`
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    userId INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    type TEXT DEFAULT 'info', -- 'info', 'success', 'warning', 'error'
+    isRead INTEGER DEFAULT 0,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS bot_backups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    botId INTEGER NOT NULL,
+    config TEXT NOT NULL,
+    version INTEGER DEFAULT 1,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (botId) REFERENCES bots(id) ON DELETE CASCADE
+  );
 `);
 
 export default db;

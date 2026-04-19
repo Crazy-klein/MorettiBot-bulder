@@ -4,6 +4,9 @@ import { ActionLogModel } from '../models/ActionLog.js';
 import { isAuthenticated } from '../middlewares/auth.js';
 import { SessionManager } from '../services/sessionManager.js';
 import { BotGenerator } from '../services/botGenerator.js';
+import { NotificationModel } from '../models/Notification.js';
+import { BotBackupModel } from '../models/BotBackup.js';
+import logger from '../utils/logger.js';
 import { z } from 'zod';
 import path from 'path';
 import fs from 'fs-extra';
@@ -41,7 +44,12 @@ router.post('/api/bots/generate', isAuthenticated, async (req, res) => {
       status: 'generated'
     });
 
+    // Create automatic backup
+    BotBackupModel.create(botId, JSON.stringify(data));
+    logger.info({ botId, userId }, 'Nouveau bot généré et sauvegardé');
+
     ActionLogModel.create(userId, 'Génération de bot', `Le bot ${data.name} a été généré.`);
+    NotificationModel.create(userId, 'Génération réussie', `Votre bot "${data.name}" a été généré avec succès et est prêt à être téléchargé.`, 'success');
 
     const zipPath = await BotGenerator.generateZip({
       name: data.name,
@@ -58,11 +66,52 @@ router.post('/api/bots/generate', isAuthenticated, async (req, res) => {
 
   } catch (err) {
     if (err instanceof z.ZodError) {
+      logger.warn({ errors: err.issues, userId }, 'Erreur de validation lors de la génération du bot');
       res.render('bot-config', { errors: err.issues, data: req.body, activeMenu: 'bots' });
     } else {
-      console.error(err);
-      res.status(500).render('error', { message: 'Erreur lors de la génération', error: err });
+      logger.error({ err, userId }, 'Erreur critique lors de la génération du bot');
+      res.status(500).render('error', { message: 'Erreur lors de la génération du ZIP', error: err });
     }
+  }
+});
+
+router.get('/bots/:id/backups', isAuthenticated, (req, res) => {
+  const userId = (req.session as any).userId;
+  const botId = parseInt(req.params.id);
+  const bot = BotModel.findById(botId);
+
+  if (!bot || bot.userId !== userId) {
+    return res.status(403).render('error', { message: 'Accès interdit' });
+  }
+
+  const backups = BotBackupModel.findByBotId(botId);
+  res.render('bot-backups', { bot, backups, activeMenu: 'bots' });
+});
+
+router.post('/bots/:id/restore/:backupId', isAuthenticated, (req, res) => {
+  const userId = (req.session as any).userId;
+  const botId = parseInt(req.params.id);
+  const backupId = parseInt(req.params.backupId);
+  const bot = BotModel.findById(botId);
+
+  if (!bot || bot.userId !== userId) {
+    return res.status(403).render('error', { message: 'Accès interdit' });
+  }
+
+  const backup = BotBackupModel.findById(backupId);
+  if (backup && backup.botId === botId) {
+    const config = JSON.parse(backup.config);
+    BotModel.update(botId, {
+      name: config.name,
+      type: config.type,
+      prefix: config.prefix,
+      config: backup.config
+    });
+    NotificationModel.create(userId, 'Restauration réussie', `Le bot "${bot.name}" a été restauré vers la version v${backup.version}.`, 'success');
+    logger.info({ botId, backupId, userId }, 'Bot restauré depuis une sauvegarde');
+    res.redirect('/dashboard');
+  } else {
+    res.status(404).render('error', { message: 'Sauvegarde non trouvée' });
   }
 });
 
@@ -77,6 +126,7 @@ router.post('/bots/:id/start-session', isAuthenticated, async (req, res) => {
 
   await SessionManager.startSession(botId);
   ActionLogModel.create(userId, 'Démarrage session', `Session en ligne lancée pour ${bot.name}`);
+  NotificationModel.create(userId, 'Session lancée', `La session en ligne pour "${bot.name}" est en attente de scan QR.`, 'info');
   res.redirect(`/bots/${botId}/session`);
 });
 

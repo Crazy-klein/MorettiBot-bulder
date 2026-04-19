@@ -10,6 +10,8 @@ import { fileURLToPath } from 'url';
 import pino from 'pino';
 import QRCode from 'qrcode';
 import { BotModel } from '../models/Bot.js';
+import { NotificationModel } from '../models/Notification.js';
+import logger from '../utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,7 +36,7 @@ export const SessionManager = {
       version,
       auth: state,
       printQRInTerminal: false,
-      logger: pino({ level: 'silent' }) as any,
+      logger: logger as any,
     });
 
     activeSessions.set(botId, { socket: sock, status: 'connecting' });
@@ -54,20 +56,29 @@ export const SessionManager = {
 
       if (connection === 'close') {
         const shouldReconnect = (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
-        console.log('Connexion fermée due à ', lastDisconnect?.error, ', reconnexion ', shouldReconnect);
+        logger.debug({ botId, error: lastDisconnect?.error, shouldReconnect }, 'WhatsApp connection closed');
         
         if (shouldReconnect) {
           SessionManager.startSession(botId);
         } else {
+          const bot = BotModel.findById(botId);
+          if (bot) {
+            NotificationModel.create(bot.userId, 'Bot Déconnecté', `Le bot "${bot.name}" a été déconnecté.`, 'warning');
+            logger.warn({ botId, userId: bot.userId }, 'Bot déconnecté et déloggé');
+          }
           activeSessions.delete(botId);
           BotModel.updateStatus(botId, 'stopped');
           await fs.remove(sessionDir);
         }
       } else if (connection === 'open') {
-        console.log('Connexion ouverte !');
+        logger.info({ botId }, 'WhatsApp connection opened');
         session.status = 'connected';
         session.qr = undefined;
         BotModel.updateStatus(botId, 'running');
+        const bot = BotModel.findById(botId);
+        if (bot) {
+          NotificationModel.create(bot.userId, 'Bot Connecté', `Votre bot "${bot.name}" est maintenant opérationnel sur WhatsApp.`, 'success');
+        }
       }
     });
 
