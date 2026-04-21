@@ -4,25 +4,40 @@ import { config } from '../../config.js';
 
 export default {
     name: 'menu',
-    description: 'Afficher le menu principal',
+    aliases: ['help', 'aide', 'commandes'],
+    description: 'Affiche l\'arsenal de commandes du bot',
     category: 'General',
     async execute(ctx: CommandContext) {
-        const menuSections = [
+        const sections = [
             `Utilisateur: @${ctx.sender.split('@')[0]}`,
-            `Prefix: ${config.prefix}`,
+            `Prefixe: ${config.prefix}`,
             '',
-            '📜 *COMMANDES DISPONIBLES*',
-            '• .ai <votre question>',
-            '• .sticker (citer une image)',
-            '• .menu',
+            '╭── *🛡️ GROUPE* ──',
+            '│ .kick, .add, .tagall, .mute, .unmute',
+            '│ .promote, .demote, .antibot, .antilink',
+            '╰───────────────',
             '',
-            '💡 _Plus de commandes bientôt disponibles._'
+            '╭── *🚀 CONVERSION* ──',
+            '│ .sticker, .toimg, .tomp3',
+            '╰───────────────',
+            '',
+            '╭── *📥 DOWNLOAD* ──',
+            '│ .tiktok, .fb, .insta, .play',
+            '╰───────────────',
+            '',
+            '╭── *🤔 INTELLIGENCE* ──',
+            '│ .ai <votre question>',
+            '╰───────────────',
+            '',
+            '╭── *🔧 OUTILS* ──',
+            '│ .weather, .lyrics, .ping, .qr',
+            '╰───────────────'
         ];
 
-        const response = formatMessage('Kurona Menu', menuSections, 'KuronaBot v1.0.0');
-        
+        const text = formatMessage('Kurona Arsenal', sections, 'KuronaBot Builder v1.0');
+
         await ctx.sock.sendMessage(ctx.remoteJid, { 
-            text: response,
+            text, 
             mentions: [ctx.sender] 
         });
     }
