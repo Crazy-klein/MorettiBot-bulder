@@ -14,6 +14,21 @@ export interface BotConfig {
   ownerName: string;
   ownerNumber: string;
   modules: string[];
+  style?: {
+    enabled: boolean;
+    preset: string;
+    custom?: {
+      topLeft: string;
+      topRight: string;
+      bottomLeft: string;
+      bottomRight: string;
+      horizontal: string;
+      vertical: string;
+      leftPrefix: string;
+      titleSeparator: string;
+      linePrefix: string;
+    };
+  };
 }
 
 export const BotGenerator = {
@@ -28,19 +43,39 @@ export const BotGenerator = {
     // Copier le template
     await fs.copy(templatePath, tempDir);
 
-    // Modifier le fichier de configuration dans le template
+    // Charger et transformer le fichier de configuration
     const configFilePath = path.join(tempDir, 'src/config.ts');
-    const configContent = `
-export const config = {
-  name: "${botConfig.name}",
-  type: "${botConfig.type}",
-  prefix: "${botConfig.prefix}",
-  ownerName: "${botConfig.ownerName}",
-  ownerNumber: "${botConfig.ownerNumber}",
-  enabledModules: ${JSON.stringify(botConfig.modules)},
-  version: "1.0.0"
-};
-`;
+    let configContent = await fs.readFile(configFilePath, 'utf-8');
+
+    // Valeurs par défaut pour le style si non fourni
+    const styleEnabled = botConfig.style?.enabled ?? true;
+    const stylePreset = botConfig.style?.preset ?? 'kurona';
+    const custom = botConfig.style?.custom || {
+        topLeft: '╔', topRight: '╗', bottomLeft: '╚', bottomRight: '╝',
+        horizontal: '┅', vertical: '┊', leftPrefix: '寂',
+        titleSeparator: '❍   ❍', linePrefix: '┊┊'
+    };
+
+    // Remplacement des placeholders
+    configContent = configContent
+      .replace('{{BOT_NAME}}', botConfig.name)
+      .replace('{{BOT_TYPE}}', botConfig.type)
+      .replace('{{BOT_PREFIX}}', botConfig.prefix)
+      .replace('{{OWNER_NAME}}', botConfig.ownerName)
+      .replace('{{OWNER_NUMBER}}', botConfig.ownerNumber)
+      .replace('{{ENABLED_MODULES}}', JSON.stringify(botConfig.modules))
+      .replace('{{MESSAGE_STYLE_ENABLED}}', styleEnabled.toString())
+      .replace('{{MESSAGE_STYLE_PRESET}}', stylePreset)
+      .replace('{{CUSTOM_TOP_LEFT}}', custom.topLeft)
+      .replace('{{CUSTOM_TOP_RIGHT}}', custom.topRight)
+      .replace('{{CUSTOM_BOTTOM_LEFT}}', custom.bottomLeft)
+      .replace('{{CUSTOM_BOTTOM_RIGHT}}', custom.bottomRight)
+      .replace('{{CUSTOM_HORIZONTAL}}', custom.horizontal)
+      .replace('{{CUSTOM_VERTICAL}}', custom.vertical)
+      .replace('{{CUSTOM_LEFT_PREFIX}}', custom.leftPrefix)
+      .replace('{{CUSTOM_TITLE_SEPARATOR}}', custom.titleSeparator)
+      .replace('{{CUSTOM_LINE_PREFIX}}', custom.linePrefix);
+
     await fs.writeFile(configFilePath, configContent);
 
     // Supprimer les modules non autorisés du template
