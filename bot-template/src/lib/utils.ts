@@ -1,5 +1,99 @@
-import { WASocket, downloadContentFromMessage, proto } from '@whiskeysockets/baileys';
+import { WASocket, downloadContentFromMessage, proto, jidNormalizedUser, downloadMediaMessage } from '@whiskeysockets/baileys';
 import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import pino from 'pino';
+
+const execPromise = promisify(exec);
+
+/**
+ * Logger système haute performance (Pino)
+ */
+export const logger = pino({
+    level: 'info',
+    transport: {
+        targets: [
+            {
+                target: 'pino-pretty',
+                options: { colorize: true, translateTime: 'HH:MM:ss', ignore: 'pid,hostname' }
+            }
+        ]
+    }
+});
+
+/**
+ * Système de traduction (Internationalisation)
+ */
+const translationsCache: Record<string, any> = {};
+export function translate(key: string, locale: string = 'fr'): string {
+    // Simple mock pour le template (normalement charge depuis /languages/*.json)
+    return `[${locale}] ${key}`;
+}
+
+/**
+ * Utilitaire de retry asynchrone
+ */
+export async function retryAsync<T>(fn: () => Promise<T>, options: { retries: number, delayMs: number } = { retries: 3, delayMs: 1000 }): Promise<T> {
+    let lastError: any;
+    for (let i = 0; i < options.retries; i++) {
+        try {
+            return await fn();
+        } catch (e) {
+            lastError = e;
+            await new Promise(r => setTimeout(r, options.delayMs));
+        }
+    }
+    throw lastError;
+}
+
+/**
+ * Géocodage (Recherche de coordonnées)
+ */
+export async function geocode(address: string) {
+    try {
+        const res = await axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`, {
+            headers: { 'User-Agent': 'KuronaBot/1.0' }
+        });
+        if (res.data?.[0]) {
+            return { latitude: parseFloat(res.data[0].lat), longitude: parseFloat(res.data[0].lon) };
+        }
+        return null;
+    } catch {
+        return null;
+    }
+}
+
+import { config } from '../config.js';
+
+/**
+ * Fonctions de formatage de messages (ASCII Style)
+ */
+const defaultStyle = {
+    topLeft: '╔', topRight: '╗', bottomLeft: '╚', bottomRight: '╝',
+    horizontal: '┅', vertical: '┊', leftPrefix: '寂',
+    titleSeparator: '❍   ❍', linePrefix: '┊┊'
+};
+
+export function formatMessage(title: string, content: string | string[], footer?: string): string {
+    const lines = Array.isArray(content) ? content : [content];
+    const topBorder = defaultStyle.horizontal.repeat(20);
+    
+    let message = `> ${defaultStyle.leftPrefix}${defaultStyle.topLeft}${topBorder}${defaultStyle.titleSeparator}${topBorder}${defaultStyle.topRight}\n`;
+    message += `> ${defaultStyle.leftPrefix}${defaultStyle.vertical} ${title.toUpperCase()}\n`;
+    message += `> ${defaultStyle.leftPrefix}${defaultStyle.bottomLeft}${defaultStyle.titleSeparator}${topBorder}${defaultStyle.bottomRight}\n`;
+    message += `> ${defaultStyle.leftPrefix}${defaultStyle.topLeft}${topBorder}${defaultStyle.titleSeparator}${topBorder}${defaultStyle.topRight}\n`;
+    
+    lines.forEach(line => {
+      message += `> ${defaultStyle.leftPrefix}${defaultStyle.linePrefix} ${line}\n`;
+    });
+    
+    if (footer) message += `> ${defaultStyle.leftPrefix}${defaultStyle.linePrefix} ${footer}\n`;
+    
+    message += `> ${defaultStyle.leftPrefix}${defaultStyle.bottomLeft}${defaultStyle.titleSeparator}${topBorder}${defaultStyle.bottomRight}`;
+    return message;
+}
 
 /**
  * Fonctions de vérification des permissions
@@ -80,6 +174,84 @@ export const mediaUtils = {
 };
 
 /**
+ * Gestionnaire des Membres et Identités (JID/LID)
+ */
+export class GroupMemberManager {
+    constructor(private botId: string) {}
+    async getLidFromPhoneNumber(sock: WASocket, groupJid: string, jid: string) { 
+        return jid; // Logique réelle Baileys normalement
+    }
+    async getPhoneNumberFromLid(sock: WASocket, groupJid: string, lid: string) { 
+        return lid; 
+    }
+}
+
+/**
+ * Gestionnaire des Permissions
+ */
+export enum CommandPermission { PUBLIC = 'PUBLIC', ADMIN = 'ADMIN', PREMIUM = 'PREMIUM', OWNER = 'OWNER', SUDO = 'SUDO' }
+export class CommandPermissionManager {
+    private sudoSessions = new Map<string, any>();
+    constructor(private defaultOwner: string, private botId: string) {}
+    
+    checkCommandPermission(ctx: { sender: string, remoteJid: string, isGroup: boolean }, command: string) {
+        if (ctx.sender.includes(this.defaultOwner)) return { statut: true, permission: CommandPermission.OWNER };
+        // Logique simplifiée : tout le monde peut tout faire sauf si restreint
+        return { statut: true, permission: CommandPermission.PUBLIC };
+    }
+
+    getSudoSession(jid: string) {
+        return this.sudoSessions.get(jid);
+    }
+}
+
+/**
+ * Gestionnaire d'Automatisme (AutoReact, AutoVu, AutoWrite)
+ */
+export class AutomationManager {
+    constructor(private botId: string) {}
+    async handleAutoActions(sock: WASocket, msg: proto.IWebMessageInfo) {
+        // Logique centralisée pour les réponses automatiques
+    }
+}
+
+/**
+ * Gestionnaire Multi-Sécurité (Spam, Links, Forbidden Words)
+ */
+export class SecurityManager {
+    constructor(private botId: string) {}
+    async checkViolation(sock: WASocket, msg: proto.IWebMessageInfo): Promise<boolean> {
+        // Retourne true si une violation est détectée et traitée
+        return false;
+    }
+}
+
+/**
+ * Moteur de recherche multimédia
+ */
+export const youtubeDownloader = {
+    async search(query: string) {
+        return [];
+    },
+    async download(url: string, type: 'mp3' | 'mp4') {
+        return null;
+    }
+};
+
+/**
+ * Export des Managers Singleton-like
+ */
+export const createManagers = (botId: string, owner: string) => ({
+    memberManager: new GroupMemberManager(botId),
+    permissionManager: new CommandPermissionManager(owner, botId),
+    automation: new AutomationManager(botId),
+    security: new SecurityManager(botId),
+    mediaDownloader: new MediaDownloader(botId),
+    rankingManager: new RankingManager(botId),
+    quiz: new GroupQuiz()
+});
+
+/**
  * Outils de recherche et de scraping
  */
 export const scraping = {
@@ -102,6 +274,43 @@ export const scraping = {
     generateVCard(name: string, jid: string): string {
         const phone = jid.split('@')[0];
         return `BEGIN:VCARD\nVERSION:3.0\nFN:${name}\nTEL;TYPE=CELL:${phone}\nEND:VCARD`;
+    }
+};
+
+/**
+ * Handlers statiques pour la préparation des messages sortants
+ */
+export class MessageHandlers {
+    static handleTextMessage(params: { text: string; mentions?: string[]; contextInfo?: any; quoted?: any }) {
+        if (!params.text) throw new Error('Texte requis');
+        const content = { text: params.text, mentions: params.mentions, contextInfo: params.contextInfo };
+        const options = params.quoted ? { quoted: params.quoted } : undefined;
+        return [content, options];
+    }
+    
+    static handleImageMessage(params: { source: string | Buffer; caption?: string; viewOnce?: boolean; quoted?: any }) {
+        const content = { image: typeof params.source === 'string' ? { url: params.source } : params.source, caption: params.caption, viewOnce: params.viewOnce };
+        const options = params.quoted ? { quoted: params.quoted } : undefined;
+        return [content, options];
+    }
+
+    static handleDeleteMessage(params: { key: proto.IMessageKey }) {
+        return { delete: params.key };
+    }
+
+    static handleReactionMessage(params: { key: proto.IMessageKey; text: string }) {
+        return { react: { text: params.text, key: params.key } };
+    }
+}
+
+/**
+ * Fonctions de manipulation d'images et stickers
+ */
+export const imageUtils = {
+    async writeExif(media: { data: Buffer, mimetype: string }, metadata: { packname: string, author: string }) {
+        const tempFile = path.join(process.cwd(), `sticker_${Date.now()}.webp`);
+        fs.writeFileSync(tempFile, media.data);
+        return tempFile;
     }
 };
 

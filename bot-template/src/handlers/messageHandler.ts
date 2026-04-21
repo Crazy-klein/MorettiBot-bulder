@@ -2,16 +2,24 @@ import { WASocket, WAMessage, proto } from '@whiskeysockets/baileys';
 import { config } from '../config.js';
 import { CommandContext } from '../types/index.js';
 import { formatMessage } from '../lib/messageStyler.js';
+import { logger, createManagers } from '../lib/utils.ts'; // Import direct du Manager fusionné
 
 export class MessageHandler {
     private commands: Map<string, any> = new Map();
+    private managers: any;
 
     constructor() {
-        // Le chargement des commandes se fait dynamiquement dans l'applet principale
+        // Initialisation des managers fusionnés dans utils.ts
+        this.managers = createManagers('bot-default', config.ownerNumber);
     }
 
     public registerCommand(name: string, command: any) {
         this.commands.set(name.toLowerCase(), command);
+        if (command.aliases) {
+            command.aliases.forEach((alias: string) => {
+                this.commands.set(alias.toLowerCase(), command);
+            });
+        }
     }
 
     public async handle(sock: WASocket, msg: WAMessage) {
@@ -23,12 +31,18 @@ export class MessageHandler {
 
         // Extraction du texte
         const messageContent = msg.message;
-        const text = messageContent.conversation || 
+        const text = (messageContent.conversation || 
                      messageContent.extendedTextMessage?.text || 
                      messageContent.imageMessage?.caption || 
-                     messageContent.videoMessage?.caption || '';
+                     messageContent.videoMessage?.caption || '').trim();
 
-        if (!text.startsWith(config.prefix)) return;
+        if (!text.startsWith(config.prefix)) {
+            // Logique de capture d'activité (Ranking/AntiSpam) même si hors commande
+            if (isGroup && this.managers.rankingManager.isEnabledForGroup(remoteJid)) {
+                this.managers.rankingManager.recordActivity(remoteJid, sender);
+            }
+            return;
+        }
 
         const args = text.slice(config.prefix.length).trim().split(/ +/);
         const commandName = args.shift()?.toLowerCase();
@@ -36,7 +50,17 @@ export class MessageHandler {
         if (!commandName) return;
 
         const command = this.commands.get(commandName);
-        if (!command) return;
+        if (!command) {
+            await sock.sendMessage(remoteJid, { react: { text: '❓', key: msg.key } });
+            return;
+        }
+
+        // Vérification des permissions via le manager
+        const permCheck = this.managers.permissionManager.checkCommandPermission({ sender, remoteJid, isGroup }, commandName);
+        if (!permCheck.statut) {
+            await sock.sendMessage(remoteJid, { react: { text: '🚫', key: msg.key } });
+            return await sock.sendMessage(remoteJid, { text: formatMessage('Accès Refusé', 'Vous n\'avez pas la permission d\'utiliser cette commande.') });
+        }
 
         // Calcul du texte complet après la commande
         const fullArgs = text.slice(config.prefix.length + commandName.length).trim();
@@ -57,11 +81,12 @@ export class MessageHandler {
         };
 
         try {
+            logger.info({ command: commandName, sender }, 'Exécution commande');
             await command.execute(ctx);
         } catch (error) {
-            console.error(`Erreur lors de l'exécution de ${commandName}:`, error);
+            logger.error({ error, command: commandName }, 'Erreur exécution');
             await sock.sendMessage(remoteJid, { 
-                text: formatMessage('Erreur Système', `Une erreur est survenue lors de l'exécution de la commande : ${error instanceof Error ? error.message : 'Inconnue'}`) 
+                text: formatMessage('Erreur Système', `Échec : ${error instanceof Error ? error.message : 'Inconnue'}`) 
             });
         }
     }
