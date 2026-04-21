@@ -38,6 +38,9 @@ export class MessageHandler {
         const command = this.commands.get(commandName);
         if (!command) return;
 
+        // Calcul du texte complet après la commande
+        const fullArgs = text.slice(config.prefix.length + commandName.length).trim();
+
         // Construction du contexte
         const ctx: CommandContext = {
             sock,
@@ -46,6 +49,7 @@ export class MessageHandler {
             remoteJid,
             text,
             args,
+            fullArgs,
             isGroup,
             quotedMessage: messageContent.extendedTextMessage?.contextInfo?.quotedMessage || null,
             mentionedJid: messageContent.extendedTextMessage?.contextInfo?.mentionedJid || [],

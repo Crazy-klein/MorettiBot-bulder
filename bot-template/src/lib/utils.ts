@@ -106,6 +106,34 @@ export const scraping = {
 };
 
 /**
+ * Utilitaires pour la manipulation de texte et de messages
+ */
+export const textUtils = {
+    /**
+     * Extrait les IDs WhatsApp (JID) mentionnés dans un texte
+     */
+    extractMentions(text: string): string[] {
+        return [...text.matchAll(/@([0-9]{5,16}|0)/g)].map(v => v[1] + '@s.whatsapp.net');
+    },
+
+    /**
+     * Parse les arguments d'une commande pour extraire les flags (ex: --ptt, -f)
+     */
+    parseFlags(args: string[]): { flags: string[], cleanArgs: string[] } {
+        const flags = args.filter(arg => arg.startsWith('--') || (arg.startsWith('-') && arg.length > 1));
+        const cleanArgs = args.filter(arg => !arg.startsWith('-'));
+        return { flags, cleanArgs };
+    },
+
+    /**
+     * Nettoie un numéro de téléphone pour n'en garder que les chiffres
+     */
+    cleanNumber(num: string): string {
+        return num.replace(/[^0-9]/g, '');
+    }
+};
+
+/**
  * Utilitaires Système / Git
  */
 export const systemUtils = {

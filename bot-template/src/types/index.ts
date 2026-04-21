@@ -11,6 +11,7 @@ export interface CommandContext {
   quotedMessage: any | null;
   mentionedJid: string[];
   mediaType: 'image' | 'video' | 'audio' | 'sticker' | 'document' | null;
+  fullArgs: string;
 }
 
 export interface Command {
