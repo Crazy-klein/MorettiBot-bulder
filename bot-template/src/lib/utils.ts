@@ -146,5 +146,34 @@ export const miscUtils = {
         const mDisplay = m > 0 ? m + (m == 1 ? " minute, " : " minutes, ") : "";
         const sDisplay = s > 0 ? s + (s == 1 ? " seconde" : " secondes") : "";
         return dDisplay + hDisplay + mDisplay + sDisplay;
+    },
+
+    /**
+     * Génère une couleur ARGB aléatoire pour les statuts
+     */
+    randomARGB(): number {
+        const r = Math.floor(Math.random() * 200) + 55;
+        const g = Math.floor(Math.random() * 200) + 55;
+        const b = Math.floor(Math.random() * 200) + 55;
+        return (0xFF << 24) | (r << 16) | (g << 8) | b;
+    },
+
+    /**
+     * Vérifie si un JID est un groupe
+     */
+    isGroup(jid: string): boolean {
+        return jid.endsWith('@g.us');
+    },
+
+    /**
+     * Formate la taille d'un fichier
+     */
+    formatBytes(bytes: number, decimals: number = 2): string {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
     }
 };
