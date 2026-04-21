@@ -80,7 +80,7 @@ export const mediaUtils = {
 };
 
 /**
- * Utilitaires de recherche et de scraping
+ * Outils de recherche et de scraping
  */
 export const scraping = {
     async getYoutubeId(query: string): Promise<string | null> {
@@ -94,6 +94,38 @@ export const scraping = {
     
     async googleSearch(query: string) {
         return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+    },
+
+    /**
+     * Génère une VCard pour un utilisateur
+     */
+    generateVCard(name: string, jid: string): string {
+        const phone = jid.split('@')[0];
+        return `BEGIN:VCARD\nVERSION:3.0\nFN:${name}\nTEL;TYPE=CELL:${phone}\nEND:VCARD`;
+    }
+};
+
+/**
+ * Utilitaires Système / Git
+ */
+export const systemUtils = {
+    async gitClone(repoUrl: string): Promise<string | null> {
+        const { exec } = await import('child_process');
+        const { promisify } = await import('util');
+        const execPromise = promisify(exec);
+        const path = await import('path');
+        const fs = await import('fs');
+        
+        const tempDir = path.join(process.cwd(), 'temp_git_' + Date.now());
+        if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
+
+        try {
+            await execPromise(`git clone --depth 1 "${repoUrl}" "${tempDir}"`);
+            return tempDir;
+        } catch (e) {
+            console.error('Git clone error:', e);
+            return null;
+        }
     }
 };
 
