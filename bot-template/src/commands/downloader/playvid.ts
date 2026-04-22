@@ -33,10 +33,11 @@ export default {
             await ctx.sock.sendMessage(ctx.remoteJid, { text: infoMsg });
 
             const fileName = `temp_vid_${Date.now()}.mp4`;
-            const filePath = path.join(process.cwd(), 'internal_storage', fileName);
+            const storageDir = path.join(process.cwd(), 'database', 'internal_storage');
+            const filePath = path.join(storageDir, fileName);
 
-            if (!fs.existsSync(path.join(process.cwd(), 'internal_storage'))) {
-                fs.mkdirSync(path.join(process.cwd(), 'internal_storage'));
+            if (!fs.existsSync(storageDir)) {
+                fs.mkdirSync(storageDir, { recursive: true });
             }
 
             const stream = ytdl(video.url, { quality: 'lowestvideo' }); // Use lowest to save bandwidth/limit

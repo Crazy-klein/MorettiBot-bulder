@@ -8,7 +8,10 @@ export default {
     description: 'Convertit une image ou une vidéo en sticker',
     category: 'Converter',
     async execute(ctx: CommandContext) {
-        if (ctx.mediaType !== 'image' && ctx.mediaType !== 'video') {
+        const isMedia = ctx.mediaType === 'image' || ctx.mediaType === 'video' || 
+                        Object.keys(ctx.quotedMessage || {}).some(k => k.includes('image') || k.includes('video'));
+
+        if (!isMedia) {
             return await ctx.sock.sendMessage(ctx.remoteJid, { 
                 text: formatMessage('Sticker Maker', '❌ Veuillez envoyer ou citer une image/vidéo courte.') 
             });

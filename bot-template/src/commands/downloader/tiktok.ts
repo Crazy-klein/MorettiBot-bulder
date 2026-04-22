@@ -1,5 +1,5 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage } from '../../lib/messageStyler.js';
+import { formatMessage } from '../../lib/utils.js';
 import axios from 'axios';
 
 export default {
@@ -17,6 +17,7 @@ export default {
         const url = ctx.args[0];
 
         try {
+            await ctx.sock.sendMessage(ctx.remoteJid, { react: { text: '🎵', key: ctx.msg.key } });
             await ctx.sock.sendMessage(ctx.remoteJid, { text: '⏳ _Téléchargement de la vidéo TikTok..._' });
 
             // Utilisation d'une API publique simulée (tikwm.com est souvent utilisé)

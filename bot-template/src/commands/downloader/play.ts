@@ -38,11 +38,12 @@ export default {
 
             const stream = ytdl(video.url, { filter: 'audioonly', quality: 'highestaudio' });
             const fileName = `temp_${Date.now()}.mp3`;
-            const filePath = path.join(process.cwd(), 'internal_storage', fileName);
+            const storageDir = path.join(process.cwd(), 'database', 'internal_storage');
+            const filePath = path.join(storageDir, fileName);
 
             // Ensure directory exists
-            if (!fs.existsSync(path.join(process.cwd(), 'internal_storage'))) {
-                fs.mkdirSync(path.join(process.cwd(), 'internal_storage'));
+            if (!fs.existsSync(storageDir)) {
+                fs.mkdirSync(storageDir, { recursive: true });
             }
 
             const fileStream = fs.createWriteStream(filePath);

@@ -131,21 +131,30 @@ export const permissions = {
 export const mediaUtils = {
     /**
      * Télécharge le contenu média d'un message (image, video, audio, sticker)
+     * Supporte les messages directs et cités.
      */
     async download(msg: proto.IWebMessageInfo, sock: WASocket): Promise<Buffer | null> {
-        const type = Object.keys(msg.message || {}).find(k => k.endsWith('Message'));
+        let message = msg.message;
+        
+        // Si c'est un message texte qui en cite un autre, on cherche le média dans le cité
+        const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+        
+        // On cherche le type de média dans le message principal ou le cité
+        let type = Object.keys(message || {}).find(k => k.endsWith('Message')) || 
+                   (quoted ? Object.keys(quoted).find(k => k.endsWith('Message')) : null);
+        
         if (!type) return null;
         
+        const content = (message as any)?.[type] || (quoted as any)?.[type];
+        if (!content) return null;
+
         try {
-            const messageContent = (msg.message as any)[type];
-            const stream = await downloadContentFromMessage(messageContent, type.replace('Message', '') as any);
+            const stream = await downloadContentFromMessage(content, type.replace('Message', '').toLowerCase() as any);
             let buffer = Buffer.from([]);
-            for await (const chunk of stream) {
-                buffer = Buffer.concat([buffer, chunk]);
-            }
+            for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
             return buffer;
         } catch (e) {
-            console.error('Erreur downloadMedia:', e);
+            console.error('Download Error:', e);
             return null;
         }
     },
@@ -286,7 +295,11 @@ export class JSONDatabase<T = any> {
 
     constructor(fileName: string) {
         const dbDir = path.join(process.cwd(), 'database');
-        if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir);
+        if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
+        
+        const storageDir = path.join(dbDir, 'internal_storage');
+        if (!fs.existsSync(storageDir)) fs.mkdirSync(storageDir, { recursive: true });
+
         this.filePath = path.join(dbDir, fileName);
         this.load();
     }

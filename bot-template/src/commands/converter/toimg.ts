@@ -1,6 +1,5 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage } from '../../lib/messageStyler.js';
-import { mediaUtils } from '../../lib/utils.js';
+import { formatMessage, mediaUtils } from '../../lib/utils.js';
 
 export default {
     name: 'toimg',
@@ -8,14 +7,18 @@ export default {
     description: 'Convertit un sticker en image',
     category: 'Converter',
     async execute(ctx: CommandContext) {
-        if (ctx.mediaType !== 'sticker') {
+        // Le mediaType peut être dans le message cité ou direct
+        const isSticker = ctx.mediaType === 'sticker' || 
+                         Object.keys(ctx.quotedMessage || {}).includes('stickerMessage');
+
+        if (!isSticker) {
             return await ctx.sock.sendMessage(ctx.remoteJid, { 
                 text: formatMessage('Sicker To Image', '❌ Veuillez citer un sticker.') 
             });
         }
 
         try {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: '⏳ _Conversion en cours..._' });
+            await ctx.sock.sendMessage(ctx.remoteJid, { react: { text: '📸', key: ctx.msg.key } });
 
             const buffer = await mediaUtils.download(ctx.msg, ctx.sock);
             if (!buffer) throw new Error('Téléchargement échoué.');
