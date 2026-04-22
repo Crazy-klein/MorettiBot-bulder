@@ -1,6 +1,5 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage } from '../../lib/messageStyler.js';
-import axios from 'axios';
+import { formatMessage, geocode } from '../../lib/utils.js';
 
 export default {
     name: 'location',
@@ -12,21 +11,19 @@ export default {
         if (!query) return await ctx.sock.sendMessage(ctx.remoteJid, { text: 'Quelle adresse recherchez-vous ?' });
 
         try {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: '⏳ _Recherche en cours..._' });
+            await ctx.sock.sendMessage(ctx.remoteJid, { react: { text: '📍', key: ctx.msg.key } });
 
-            // Utilisation d'une API OpenStreetMap pour la démo template
-            const res = await axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+            const place = await geocode(query);
             
-            if (res.data && res.data[0]) {
-                const place = res.data[0];
+            if (place) {
                 await ctx.sock.sendMessage(ctx.remoteJid, {
                     location: {
-                        degreesLatitude: parseFloat(place.lat),
-                        degreesLongitude: parseFloat(place.lon)
+                        degreesLatitude: place.latitude,
+                        degreesLongitude: place.longitude
                     }
                 });
                 await ctx.sock.sendMessage(ctx.remoteJid, { 
-                    text: formatMessage('Localisation', `📍 *Lieu :* ${place.display_name}`) 
+                    text: formatMessage('Localisation', `📍 Coordonnées envoyées pour votre recherche.`) 
                 });
             } else {
                 throw new Error('Lieu non trouvé');

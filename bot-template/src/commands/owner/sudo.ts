@@ -1,7 +1,8 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage } from '../../lib/messageStyler.js';
-import { permissions } from '../../lib/utils.js';
+import { formatMessage, permissions, JSONDatabase } from '../../lib/utils.js';
 import { config } from '../../config.js';
+
+const db = new JSONDatabase<{ expires: number }>('sudo_users.json');
 
 export default {
     name: 'sudo',
@@ -10,18 +11,24 @@ export default {
     async execute(ctx: CommandContext) {
         if (!permissions.isOwner(ctx.sender, config.ownerNumber)) return;
 
-        const target = ctx.mentionedJid[0];
-        const duration = parseInt(ctx.args[1]);
+        const target = ctx.mentionedJid[0] || (ctx.quotedMessage ? (ctx.msg.message as any)?.extendedTextMessage?.contextInfo?.participant : null);
+        const duration = parseInt(ctx.args.filter(a => !a.includes('@'))[0]);
 
         if (!target || isNaN(duration)) {
             return await ctx.sock.sendMessage(ctx.remoteJid, { 
-                text: formatMessage('Sudo System', 'Usage: .sudo @user <minutes>') 
+                text: formatMessage('Sudo System', '💡 Usage: .sudo @user <minutes>') 
             });
         }
 
-        // Dans un vrai bot, on stockerait ça en DB
+        const expires = Date.now() + (duration * 60 * 1000);
+        db.set(target, { expires });
+
         await ctx.sock.sendMessage(ctx.remoteJid, { 
-            text: formatMessage('Sudo', `@${target.split('@')[0]} a reçu des droits temporaires pour ${duration} minutes.`),
+            text: formatMessage('Sudo', [
+                `👤 Cible : @${target.split('@')[0]}`,
+                `⏱️ Durée : ${duration} minutes`,
+                '🛡️ État : Privilèges accordés'
+            ]),
             mentions: [target]
         });
     }

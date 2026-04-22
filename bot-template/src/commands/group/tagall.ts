@@ -1,6 +1,5 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage } from '../../lib/messageStyler.js';
-import { permissions } from '../../lib/utils.js';
+import { formatMessage, permissions } from '../../lib/utils.js';
 
 export default {
     name: 'tagall',
@@ -11,9 +10,7 @@ export default {
         if (!ctx.isGroup) return;
 
         const isUserAdmin = await permissions.isAdmin(ctx.sock, ctx.remoteJid, ctx.sender);
-        if (!isUserAdmin) {
-            return await ctx.sock.sendMessage(ctx.remoteJid, { text: '❌ Réservé aux admins.' });
-        }
+        if (!isUserAdmin) return await ctx.sock.sendMessage(ctx.remoteJid, { react: { text: '🚫', key: ctx.msg.key } });
 
         try {
             const groupMetadata = await ctx.sock.groupMetadata(ctx.remoteJid);
@@ -22,7 +19,7 @@ export default {
 
             let response = `📢 *APPEL GÉNÉRAL*\n\n💬 ${message}\n\n`;
             participants.forEach(p => {
-                response += `@${p.id.split('@')[0]} `;
+                response += `👤 @${p.id.split('@')[0]}\n`;
             });
 
             await ctx.sock.sendMessage(ctx.remoteJid, { 
@@ -30,7 +27,7 @@ export default {
                 mentions: participants.map(p => p.id)
             });
         } catch (e) {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: '❌ Erreur lors de l\'appel.' });
+            await ctx.sock.sendMessage(ctx.remoteJid, { text: '❌ Erreur' });
         }
     }
 };

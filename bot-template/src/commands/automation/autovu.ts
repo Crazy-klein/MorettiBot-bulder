@@ -1,5 +1,7 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage } from '../../lib/messageStyler.js';
+import { formatMessage, JSONDatabase } from '../../lib/utils.js';
+
+const db = new JSONDatabase<{ enabled: boolean, like: boolean }>('autovu.json');
 
 export default {
     name: 'autovu',
@@ -8,13 +10,18 @@ export default {
     category: 'Automation',
     async execute(ctx: CommandContext) {
         const sub = ctx.args[0]?.toLowerCase();
-        if (sub === 'on') {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Auto-Vu', '✅ Visionnage automatique actif.') });
+        const settings = db.get('global') || { enabled: false, like: false };
+
+        if (sub === 'on' || sub === 'off') {
+            settings.enabled = sub === 'on';
+            db.set('global', settings);
+            await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Auto-Vu', `✅ Visionnage automatique : ${settings.enabled ? 'Activé' : 'Désactivé'}`) });
         } else if (sub === 'like') {
-            const state = ctx.args[1] === 'on' ? 'Activé' : 'Désactivé';
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Auto-Vu', `💖 Like automatique : ${state}`) });
+            settings.like = ctx.args[1]?.toLowerCase() === 'on';
+            db.set('global', settings);
+            await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Auto-Vu', `💖 Like automatique : ${settings.like ? 'Activé' : 'Désactivé'}`) });
         } else {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: 'Usage: .autovu <on/off/like on/like off>' });
+            await ctx.sock.sendMessage(ctx.remoteJid, { text: `📊 État global : ${settings.enabled ? 'On' : 'Off'} | Likes : ${settings.like ? 'On' : 'Off'}. Usage: .autovu <on/off/like on/like off>` });
         }
     }
 };

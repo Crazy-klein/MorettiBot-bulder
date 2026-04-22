@@ -1,5 +1,5 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage } from '../../lib/messageStyler.js';
+import { formatMessage } from '../../lib/utils.js';
 import axios from 'axios';
 
 export default {

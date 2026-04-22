@@ -1,5 +1,7 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage } from '../../lib/messageStyler.js';
+import { formatMessage, JSONDatabase } from '../../lib/utils.js';
+
+const db = new JSONDatabase<{ enabled: boolean, mode: 'typing' | 'recording' }>('autotype.json');
 
 export default {
     name: 'autotype',
@@ -8,13 +10,19 @@ export default {
     category: 'Automation',
     async execute(ctx: CommandContext) {
         const sub = ctx.args[0]?.toLowerCase();
-        if (sub === 'on') {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Auto-Type', '✅ Simulation d\'écriture active.') });
-        } else if (sub === 'duration') {
-            const time = parseInt(ctx.args[1]) || 5;
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Auto-Type', `⏳ Durée réglée sur ${time}s.`) });
+        const settings = db.get(ctx.remoteJid) || { enabled: false, mode: 'typing' };
+
+        if (sub === 'on' || sub === 'off') {
+            settings.enabled = sub === 'on';
+            db.set(ctx.remoteJid, settings);
+            await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Auto-Type', `✅ Simulation (${settings.mode}) : ${settings.enabled ? 'Activée' : 'Désactivée'}`) });
+        } else if (sub === 'mode') {
+            const mode = ctx.args[1]?.toLowerCase() === 'recording' ? 'recording' : 'typing';
+            settings.mode = mode;
+            db.set(ctx.remoteJid, settings);
+            await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Auto-Type', `⚙️ Mode changé en : ${mode}`) });
         } else {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: 'Usage: .autotype <on/off/duration [s]>' });
+            await ctx.sock.sendMessage(ctx.remoteJid, { text: `📊 État : ${settings.enabled ? 'On' : 'Off'} | Mode : ${settings.mode}. Usage: .autotype <on/off/mode typing/recording>` });
         }
     }
 };

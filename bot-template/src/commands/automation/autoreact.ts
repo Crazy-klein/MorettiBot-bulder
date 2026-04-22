@@ -1,5 +1,7 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage } from '../../lib/messageStyler.js';
+import { formatMessage, JSONDatabase } from '../../lib/utils.js';
+
+const db = new JSONDatabase<{ enabled: boolean }>('autoreact.json');
 
 export default {
     name: 'autoreact',
@@ -8,12 +10,18 @@ export default {
     category: 'Automation',
     async execute(ctx: CommandContext) {
         const sub = ctx.args[0]?.toLowerCase();
+        const settings = db.get(ctx.remoteJid) || { enabled: false };
+
         if (sub === 'on') {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Auto-React', '✅ Activé pour ce groupe.') });
+            settings.enabled = true;
+            db.set(ctx.remoteJid, settings);
+            await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Auto-React', '✅ Activé pour ce chat.') });
         } else if (sub === 'off') {
+            settings.enabled = false;
+            db.set(ctx.remoteJid, settings);
             await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Auto-React', '❌ Désactivé.') });
         } else {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: 'Usage: .autoreact <on/off>' });
+            await ctx.sock.sendMessage(ctx.remoteJid, { text: `📊 État : ${settings.enabled ? 'On' : 'Off'}. Usage: .autoreact <on/off>` });
         }
     }
 };

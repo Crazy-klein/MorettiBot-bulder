@@ -1,6 +1,7 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage } from '../../lib/messageStyler.js';
-import { permissions } from '../../lib/utils.js';
+import { formatMessage, permissions, JSONDatabase } from '../../lib/utils.js';
+
+const db = new JSONDatabase<{ enabled: boolean, text: string }>('welcome.json');
 
 export default {
     name: 'welcome',
@@ -12,23 +13,30 @@ export default {
         if (!await permissions.isAdmin(ctx.sock, ctx.remoteJid, ctx.sender)) return;
 
         const sub = ctx.args[0]?.toLowerCase();
-        
+        const settings = db.get(ctx.remoteJid) || { enabled: false, text: 'Bienvenue sur @group, @user !' };
+
         switch(sub) {
             case 'on':
-                await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Welcome', '✅ Messages de bienvenue activés.') });
+                settings.enabled = true;
+                db.set(ctx.remoteJid, settings);
+                await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Welcome', '✅ Activé.') });
                 break;
             case 'off':
-                await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Welcome', '❌ Messages de bienvenue désactivés.') });
+                settings.enabled = false;
+                db.set(ctx.remoteJid, settings);
+                await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Welcome', '❌ Désactivé.') });
                 break;
             case 'set':
-                const template = ctx.args.slice(1).join(' ');
-                await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Welcome', `📝 Template défini :\n"${template}"`) });
+                settings.text = ctx.args.slice(1).join(' ');
+                db.set(ctx.remoteJid, settings);
+                await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Welcome', `✅ Template mis à jour.`) });
                 break;
             case 'preview':
-                await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Welcome Preview', 'Ceci est un exemple de message de bienvenue.') });
+                let msg = settings.text.replace('@user', `@${ctx.sender.split('@')[0]}`).replace('@group', 'Ce Groupe');
+                await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Welcome Preview', msg), mentions: [ctx.sender] });
                 break;
             default:
-                await ctx.sock.sendMessage(ctx.remoteJid, { text: 'Usage: .welcome <on/off/set template/preview>' });
+                await ctx.sock.sendMessage(ctx.remoteJid, { text: '💡 Usage: .welcome <on/off/set message/preview>' });
         }
     }
 };

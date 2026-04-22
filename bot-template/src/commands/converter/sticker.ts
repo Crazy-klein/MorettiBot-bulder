@@ -1,6 +1,6 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage } from '../../lib/messageStyler.js';
-import { mediaUtils } from '../../lib/utils.js';
+import { formatMessage, mediaUtils } from '../../lib/utils.js';
+import { Sticker, StickerTypes } from 'wa-sticker-formatter';
 
 export default {
     name: 'sticker',
@@ -15,21 +15,27 @@ export default {
         }
 
         try {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: '⏳ _Génération de votre sticker..._' });
+            await ctx.sock.sendMessage(ctx.remoteJid, { react: { text: '🎨', key: ctx.msg.key } });
 
             const buffer = await mediaUtils.download(ctx.msg, ctx.sock);
             if (!buffer) throw new Error('Impossible de charger le média.');
 
-            // L'envoi direct via Baileys avec mimetype image/webp suffit souvent
-            // KuronaBot Builder peut inclure une lib de traitement (Sharp/Fluent-ffmpeg) plus tard
-            await ctx.sock.sendMessage(ctx.remoteJid, { 
-                sticker: buffer,
-                mimetype: 'image/webp'
+            const sticker = new Sticker(buffer, {
+                pack: 'Kurona Arsenal',
+                author: 'KuronaBot Builder',
+                type: StickerTypes.FULL,
+                categories: ['🤩', '🎉'],
+                id: '12345',
+                quality: 70,
             });
 
+            const stickerBuffer = await sticker.toBuffer();
+            await ctx.sock.sendMessage(ctx.remoteJid, { sticker: stickerBuffer });
+
         } catch (error: any) {
+            console.error('Sticker Error:', error);
             await ctx.sock.sendMessage(ctx.remoteJid, { 
-                text: formatMessage('Erreur Sticker', `Erreur: ${error.message}`) 
+                text: formatMessage('Erreur Sticker', `Échec : ${error.message}`) 
             });
         }
     }

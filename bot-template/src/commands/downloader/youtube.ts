@@ -1,39 +1,57 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage } from '../../lib/messageStyler.js';
-import { scraping } from '../../lib/utils.js';
+import { formatMessage } from '../../lib/utils.js';
+import yts from 'yt-search';
+import ytdl from 'ytdl-core';
+import fs from 'fs';
+import path from 'path';
 
 export default {
     name: 'youtube',
-    aliases: ['yt', 'video', 'song', 'play'],
+    aliases: ['yt'],
     description: 'Télécharge une vidéo ou de la musique depuis YouTube',
     category: 'Downloader',
     async execute(ctx: CommandContext) {
         const query = ctx.args.join(' ');
-        if (!query) return;
+        if (!query) return await ctx.sock.sendMessage(ctx.remoteJid, { text: '🔍 Entrez un titre ou un lien YouTube.' });
 
         try {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: '🔍 _Recherche sur YouTube..._' });
-            const videoId = await scraping.getYoutubeId(query);
+            await ctx.sock.sendMessage(ctx.remoteJid, { react: { text: '📺', key: ctx.msg.key } });
+            const search = await yts(query);
+            const video = search.videos[0];
+            if (!video) return await ctx.sock.sendMessage(ctx.remoteJid, { text: '❌ Aucun résultat.' });
 
-            if (!videoId) {
-                return await ctx.sock.sendMessage(ctx.remoteJid, { text: '❌ Aucun résultat.' });
-            }
-
-            const url = `https://www.youtube.com/watch?v=${videoId}`;
+            const isVideo = ctx.text.toLowerCase().includes('vid') || ctx.args.includes('--vid');
             
-            // Dans le template, on fournit le lien car le téléchargement serveur 
-            // exige ytdl-core qui est souvent instable ou interdit sur certains hosts.
             await ctx.sock.sendMessage(ctx.remoteJid, { 
-                text: formatMessage('YouTube Downloader', [
-                    `🎬 Vidéo trouvée !`,
-                    `🔗 Lien: ${url}`,
+                text: formatMessage('YouTube', [
+                    `🎬 Titre : ${video.title}`,
+                    `⏱️ Durée : ${video.timestamp}`,
+                    `📦 Format : ${isVideo ? 'MP4' : 'MP3'}`,
                     '',
-                    '_NB: Utilisez un service externe pour convertir en MP3/MP4 si nécessaire._'
+                    '🚀 Téléchargement en cours...'
                 ])
             });
 
+            const fileName = `yt_${Date.now()}.${isVideo ? 'mp4' : 'mp3'}`;
+            const filePath = path.join(process.cwd(), 'internal_storage', fileName);
+            if (!fs.existsSync(path.join(process.cwd(), 'internal_storage'))) fs.mkdirSync(path.join(process.cwd(), 'internal_storage'));
+
+            const stream = ytdl(video.url, { 
+                filter: isVideo ? 'videoandaudio' : 'audioonly',
+                quality: isVideo ? 'lowest' : 'highestaudio' 
+            });
+
+            const fileStream = fs.createWriteStream(filePath);
+            stream.pipe(fileStream);
+
+            fileStream.on('finish', async () => {
+                const messageOptions: any = isVideo ? { video: { url: filePath } } : { audio: { url: filePath }, mimetype: 'audio/mpeg' };
+                await ctx.sock.sendMessage(ctx.remoteJid, messageOptions, { quoted: ctx.msg });
+                fs.unlinkSync(filePath);
+            });
+
         } catch (e) {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: '❌ Erreur YouTube.' });
+            await ctx.sock.sendMessage(ctx.remoteJid, { text: '❌ Échec du téléchargement YouTube.' });
         }
     }
 };

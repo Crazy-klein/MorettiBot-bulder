@@ -278,6 +278,48 @@ export const scraping = {
 };
 
 /**
+ * Système de base de données JSON simple et persistant
+ */
+export class JSONDatabase<T = any> {
+    private data: Record<string, T> = {};
+    private filePath: string;
+
+    constructor(fileName: string) {
+        const dbDir = path.join(process.cwd(), 'database');
+        if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir);
+        this.filePath = path.join(dbDir, fileName);
+        this.load();
+    }
+
+    private load() {
+        if (fs.existsSync(this.filePath)) {
+            try {
+                this.data = JSON.parse(fs.readFileSync(this.filePath, 'utf8'));
+            } catch (e) {
+                this.data = {};
+            }
+        }
+    }
+
+    public save() {
+        fs.writeFileSync(this.filePath, JSON.stringify(this.data, null, 2));
+    }
+
+    public get(key: string): T | undefined {
+        return this.data[key];
+    }
+
+    public set(key: string, value: T) {
+        this.data[key] = value;
+        this.save();
+    }
+
+    public all(): Record<string, T> {
+        return this.data;
+    }
+}
+
+/**
  * Handlers statiques pour la préparation des messages sortants
  */
 export class MessageHandlers {

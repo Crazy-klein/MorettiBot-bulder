@@ -1,6 +1,5 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage } from '../../lib/messageStyler.js';
-import { permissions } from '../../lib/utils.js';
+import { formatMessage, permissions } from '../../lib/utils.js';
 
 export default {
     name: 'promote',

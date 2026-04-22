@@ -1,6 +1,7 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage } from '../../lib/messageStyler.js';
-import { permissions } from '../../lib/utils.js';
+import { formatMessage, permissions, JSONDatabase } from '../../lib/utils.js';
+
+const db = new JSONDatabase<string[]>('forbidden_words.json');
 
 export default {
     name: 'antiforbidden',
@@ -12,12 +13,19 @@ export default {
         if (!await permissions.isAdmin(ctx.sock, ctx.remoteJid, ctx.sender)) return;
 
         const action = ctx.args[0]?.toLowerCase();
-        const word = ctx.args.slice(1).join(' ');
+        const word = ctx.args.slice(1).join(' ')?.toLowerCase();
+        const forbidden = db.get(ctx.remoteJid) || [];
 
         if (action === 'add' && word) {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Anti-Mots', `Mots "${word}" ajouté à la liste noire.`) });
+            forbidden.push(word);
+            db.set(ctx.remoteJid, forbidden);
+            await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Anti-Mots', `Le mot "${word}" a été banni.`) });
         } else if (action === 'list') {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Anti-Mots', 'Liste vide pour le moment.') });
+            await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Anti-Mots', forbidden.length ? forbidden.join(', ') : 'Aucun mot banni.') });
+        } else if (action === 'remove' && word) {
+            const filtered = forbidden.filter(w => w !== word);
+            db.set(ctx.remoteJid, filtered);
+            await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Anti-Mots', `Le mot "${word}" a été retiré.`) });
         } else {
             await ctx.sock.sendMessage(ctx.remoteJid, { text: 'Usage: .af <add/list/remove> [mot]' });
         }

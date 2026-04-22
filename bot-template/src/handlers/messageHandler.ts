@@ -1,8 +1,7 @@
 import { WASocket, WAMessage, proto } from '@whiskeysockets/baileys';
 import { config } from '../config.js';
 import { CommandContext } from '../types/index.js';
-import { formatMessage } from '../lib/messageStyler.js';
-import { logger, createManagers } from '../lib/utils.ts'; // Import direct du Manager fusionné
+import { logger, createManagers, formatMessage } from '../lib/utils.ts'; // Import centralisé et formatMessage fusionné
 
 export class MessageHandler {
     private commands: Map<string, any> = new Map();
