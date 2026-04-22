@@ -167,7 +167,19 @@ export class JSONDatabase<T = any> {
     public save() { fs.writeFileSync(this.filePath, JSON.stringify(this.data, null, 2)); }
     public get(key: string): T | undefined { return this.data[key]; }
     public set(key: string, value: T) { this.data[key] = value; this.save(); }
+    public delete(key: string) { delete this.data[key]; this.save(); }
 }
+
+export const botStatus = {
+    isPublic(): boolean {
+        const db = new JSONDatabase('config.json');
+        return db.get('isPublic') !== false; // Public par défaut
+    },
+    setPublic(status: boolean) {
+        const db = new JSONDatabase('config.json');
+        db.set('isPublic', status);
+    }
+};
 
 export class GroupMemberManager {
     constructor(botId: string) {}

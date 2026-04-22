@@ -1,6 +1,6 @@
 import { proto, WASocket, jidNormalizedUser } from '@whiskeysockets/baileys';
 import { config } from '../config.js';
-import { formatMessage, permissions, createManagers, logger, JSONDatabase } from '../lib/utils.js';
+import { formatMessage, permissions, createManagers, logger, JSONDatabase, botStatus } from '../lib/utils.js';
 import path from 'path';
 import fs from 'fs';
 
@@ -14,6 +14,10 @@ export const handleMessage = async (sock: WASocket, m: { messages: proto.IWebMes
     const remoteJid = msg.key.remoteJid!;
     const sender = msg.key.participant || msg.key.remoteJid!;
     const isGroup = remoteJid.endsWith('@g.us');
+
+    // --- ACCÈS PRIVE ---
+    const isOwner = permissions.isOwner(sender, config.ownerNumber);
+    if (!botStatus.isPublic() && !isOwner) return;
     
     // Extraction texte
     const body = msg.message.conversation || 
