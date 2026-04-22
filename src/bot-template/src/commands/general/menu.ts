@@ -4,8 +4,8 @@ import { config } from '../../config.js';
 
 export default {
     name: 'menu',
-    aliases: ['help', 'aide', 'commandes'],
-    description: 'Affiche l\'arsenal de commandes du bot',
+    aliases: ['help', 'aide'],
+    description: 'Affiche la liste des commandes',
     category: 'General',
     async execute(ctx: CommandContext) {
         const sections = [
@@ -16,15 +16,19 @@ export default {
             '│ .antidelete, .antispam, .antitag',
             '│ .antilink, .antword, .antisticker',
             '│ .antivideo, .antistatus, .antiforward',
+            '│ .antidemote, .antipromote, .antibot',
             '╰───────────────',
             '',
             '╭── *👥 GROUPE* ──',
             '│ .kick, .tagall, .mute, .unmute',
             '│ .promote, .demote, .welcome, .goodbye',
+            '│ .kickall, .groupinfo, .setname, .setdesc',
+            '│ .tagadmin, .approveall, .gcstatus, .vcf',
             '╰───────────────',
             '',
             '╭── *📥 DOWNLOADER* ──',
             '│ .tiktok, .facebook, .youtube, .play',
+            '│ .playvid',
             '╰───────────────',
             '',
             '╭── *🤖 AUTOMATION* ──',
@@ -32,20 +36,19 @@ export default {
             '│ .responder',
             '╰───────────────',
             '',
-            '╭── *🧠 INTELLIGENCE* ──',
-            '│ .ai <votre question>',
+            '╭── *🔧 OUTILS* ──',
+            '│ .weather, .lyrics, .ping, .qr, .getid',
+            '│ .tts, .translate, .tourl, .getpp',
+            '│ .location, .tg, .vv, .store, .getmedia',
             '╰───────────────',
             '',
-            '╭── *🔧 OUTILS* ──',
-            '│ .weather, .lyrics, .ping, .qr',
-            '│ .tts, .translate, .tourl, .getid',
+            '╭── *🎨 CONVERTER* ──',
+            '│ .sticker, .toimg, .takesticker',
             '╰───────────────'
         ];
 
-        const text = formatMessage('Kurona Arsenal', sections, 'KuronaBot Builder v2.0');
-
         await ctx.sock.sendMessage(ctx.remoteJid, { 
-            text, 
+            text: formatMessage('Kurona Arsenal', sections, 'KuronaBot Builder v2.0'),
             mentions: [ctx.sender] 
         });
     }
