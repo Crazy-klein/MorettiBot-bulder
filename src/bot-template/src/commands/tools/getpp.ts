@@ -1,23 +1,19 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage } from '../../lib/utils.js';
+import { formatMessage } from '../../lib/messageStyler.js';
 
-export default {
-    name: 'getpp',
-    aliases: ['pp'],
-    description: 'Récupère la photo de profil',
-    category: 'Tools',
-    async execute(ctx: CommandContext) {
-        const target = ctx.mentionedJid[0] || (ctx.quotedMessage ? (ctx.msg.message as any)?.extendedTextMessage?.contextInfo?.participant : ctx.sender);
-
-        try {
-            const url = await ctx.sock.profilePictureUrl(target, 'image');
-            await ctx.sock.sendMessage(ctx.remoteJid, { 
-                image: { url }, 
-                caption: formatMessage('Profile Picture', `Photo de profil de @${target.split('@')[0]}`),
-                mentions: [target]
-            });
-        } catch {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: '❌ Photo de profil introuvable ou privée.' });
-        }
+export const command = {
+  name: 'getpp',
+  aliases: ['pp'],
+  description: 'Récupère la photo de profil en HD',
+  category: 'Tools',
+  async execute(ctx: CommandContext) {
+    const target = ctx.msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || ctx.quotedMessage?.participant || ctx.remoteJid;
+    
+    try {
+      const ppUrl = await ctx.sock.profilePictureUrl(target, 'image');
+      await ctx.sock.sendMessage(ctx.remoteJid, { image: { url: ppUrl }, caption: formatMessage('Avatar HD', `📸 Photo deprofil de @${target.split('@')[0]}`), mentions: [target] });
+    } catch {
+      await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Erreur', 'Impossible de récupérer la photo de profil (Introuvable ou privée).') });
     }
+  }
 };

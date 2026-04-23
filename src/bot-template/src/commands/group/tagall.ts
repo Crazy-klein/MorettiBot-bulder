@@ -3,24 +3,25 @@ import { formatMessage } from '../../lib/messageStyler.js';
 import { permissions } from '../../lib/utils.js';
 
 export const command = {
-  name: 'tagadmin',
-  aliases: ['admins', 'alerteadmin'],
-  description: 'Mentionner tous les administrateurs',
+  name: 'tagall',
+  aliases: ['tous', 'appel'],
+  description: 'Mentionner tous les membres du groupe',
   category: 'Group',
   async execute(ctx: CommandContext) {
     if (!ctx.isGroup) return;
-    
+    if (!await permissions.isAdmin(ctx.sock, ctx.remoteJid, ctx.sender)) return;
+
     try {
       const metadata = await ctx.sock.groupMetadata(ctx.remoteJid);
-      const admins = metadata.participants.filter(p => p.admin !== null).map(p => p.id);
-      const message = ctx.args.join(' ') || 'Demande d\'assistance admin !';
+      const participants = metadata.participants.map(p => p.id);
+      const message = ctx.args.join(' ') || 'Appel général !';
       
-      let tagMsg = `🚨 *ALERTE ADMINISTRATEURS*\n\n`;
+      let tagMsg = `📣 *ANNOUNCE GÉNÉRALE*\n\n`;
       tagMsg += `📝 Message : ${message}\n\n`;
-      admins.forEach(id => tagMsg += `┣ ❍ @${id.split('@')[0]}\n`);
+      participants.forEach(id => tagMsg += `┣ ❍ @${id.split('@')[0]}\n`);
       tagMsg += `┗━━━━━━━━━━━━━`;
 
-      await ctx.sock.sendMessage(ctx.remoteJid, { text: tagMsg, mentions: admins });
+      await ctx.sock.sendMessage(ctx.remoteJid, { text: tagMsg, mentions: participants });
     } catch (e: any) {
       await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Erreur', e.message) });
     }

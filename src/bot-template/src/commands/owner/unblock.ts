@@ -1,26 +1,24 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage, permissions } from '../../lib/utils.js';
+import { permissions } from '../../lib/utils.js';
 import { config } from '../../config.js';
+import { formatMessage } from '../../lib/messageStyler.js';
 
-export default {
-    name: 'unblock',
-    aliases: ['debloquer'],
-    description: 'Débloque un utilisateur (Owner uniquement)',
-    category: 'Owner',
-    async execute(ctx: CommandContext) {
-        if (!permissions.isOwner(ctx.sender, config.ownerNumber)) return await ctx.sock.sendMessage(ctx.remoteJid, { text: '🚫 Commande réservée au propriétaire.' });
+export const command = {
+  name: 'unblock',
+  aliases: ['debloquer'],
+  description: 'Débloquer un utilisateur',
+  category: 'Owner',
+  async execute(ctx: CommandContext) {
+    if (!permissions.isOwner(ctx.sender, config.ownerNumber)) return;
 
-        const target = ctx.mentionedJid[0] || (ctx.quotedMessage ? (ctx.msg.message as any)?.extendedTextMessage?.contextInfo?.participant : null);
-        if (!target) return await ctx.sock.sendMessage(ctx.remoteJid, { text: '👤 Citez ou mentionnez quelqu\'un.' });
+    const target = ctx.msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || ctx.quotedMessage?.participant;
+    if (!target) return await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Usage', 'Taguez l\'utilisateur.') });
 
-        try {
-            await ctx.sock.updateBlockStatus(target, 'unblock');
-            await ctx.sock.sendMessage(ctx.remoteJid, { 
-                text: formatMessage('Sûreté', `✅ @${target.split('@')[0]} a été débloqué.`),
-                mentions: [target]
-            });
-        } catch (e) {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: '❌ Erreur de déblocage.' });
-        }
+    try {
+      await ctx.sock.updateBlockStatus(target, 'unblock');
+      await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Système', '✅ Utilisateur débloqué.') });
+    } catch {
+      await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Erreur', 'Échec du déblocage.') });
     }
+  }
 };

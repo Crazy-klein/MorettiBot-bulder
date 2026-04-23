@@ -1,23 +1,24 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage, permissions } from '../../lib/utils.js';
+import { formatMessage } from '../../lib/messageStyler.js';
+import { permissions } from '../../lib/utils.js';
 
-export default {
-    name: 'setname',
-    aliases: ['setsubject'],
-    description: 'Change le nom du groupe',
-    category: 'Group',
-    async execute(ctx: CommandContext) {
-        if (!ctx.isGroup) return;
-        if (!await permissions.isAdmin(ctx.sock, ctx.remoteJid, ctx.sender)) return await ctx.sock.sendMessage(ctx.remoteJid, { text: '🚫 Admin requis.' });
+export const command = {
+  name: 'setname',
+  aliases: ['nomgroupe'],
+  description: 'Changer le nom du groupe',
+  category: 'Group',
+  async execute(ctx: CommandContext) {
+    if (!ctx.isGroup) return;
+    if (!await permissions.isAdmin(ctx.sock, ctx.remoteJid, ctx.sender)) return;
 
-        const text = ctx.args.join(' ');
-        if (!text) return await ctx.sock.sendMessage(ctx.remoteJid, { text: '💡 Usage: .setname <nouveau nom>' });
+    const newName = ctx.args.join(' ');
+    if (!newName) return await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Usage', '.setname <nouveau_nom>') });
 
-        try {
-            await ctx.sock.groupUpdateSubject(ctx.remoteJid, text);
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Groupe', `✅ Nom mis à jour : ${text}`) });
-        } catch (e) {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: '❌ Erreur de modification.' });
-        }
+    try {
+      await ctx.sock.groupUpdateSubject(ctx.remoteJid, newName);
+      await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Succès', 'Nom du groupe mis à jour.') });
+    } catch (e: any) {
+      await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Erreur', e.message) });
     }
+  }
 };

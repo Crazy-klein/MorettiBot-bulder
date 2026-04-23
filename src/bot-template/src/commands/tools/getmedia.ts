@@ -1,41 +1,28 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage } from '../../lib/utils.js';
+import { formatMessage } from '../../lib/messageStyler.js';
+import { permissions } from '../../lib/utils.js';
+import { config } from '../../config.js';
 import fs from 'fs';
 import path from 'path';
 
-export default {
-    name: 'getmedia',
-    aliases: ['si', 'sendimg', 'sendvid', 'sendaudio', 'getfile'],
-    description: 'Récupère un média du stockage interne',
-    category: 'Tools',
-    async execute(ctx: CommandContext) {
-        const name = ctx.args[0];
-        if (!name) return await ctx.sock.sendMessage(ctx.remoteJid, { text: '💡 Usage: .getmedia <nom>' });
+export const command = {
+  name: 'getmedia',
+  aliases: ['recuperer', 'gm'],
+  description: 'Récupère un média archivé localement',
+  category: 'Tools',
+  async execute(ctx: CommandContext) {
+    if (!permissions.isOwner(ctx.sender, config.ownerNumber)) return;
 
-        const storageDir = path.join(process.cwd(), 'database', 'media_store');
-        const filePath = path.join(storageDir, `${name}.bin`);
+    const name = ctx.args[0];
+    if (!name) return await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Usage', '.getmedia <nom_archive>') });
 
-        if (!fs.existsSync(filePath)) return await ctx.sock.sendMessage(ctx.remoteJid, { text: `❌ Fichier "${name}" introuvable.` });
+    const dir = path.join(process.cwd(), 'database', 'internal_storage');
+    const filePath = path.join(dir, name);
 
-        try {
-            const buffer = fs.readFileSync(filePath);
-            
-            // On tente de deviner le type par l'alias ou par sniff (ici par alias pour simplifier le template)
-            const cmd = ctx.msg.message?.conversation?.split(' ')[0].slice(1) || '';
-            
-            if (cmd === 'sendimg' || cmd === 'si') {
-                await ctx.sock.sendMessage(ctx.remoteJid, { image: buffer, caption: name });
-            } else if (cmd === 'sendvid') {
-                await ctx.sock.sendMessage(ctx.remoteJid, { video: buffer, caption: name });
-            } else if (cmd === 'sendaudio') {
-                await ctx.sock.sendMessage(ctx.remoteJid, { audio: buffer, mimetype: 'audio/mpeg' });
-            } else {
-                // Auto-détection basique ou Document par défaut
-                await ctx.sock.sendMessage(ctx.remoteJid, { document: buffer, fileName: `${name}.bin`, mimetype: 'application/octet-stream' });
-            }
+    if (!fs.existsSync(filePath)) return await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Erreur', 'Média introuvable.') });
 
-        } catch {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: '❌ Erreur de lecture.' });
-        }
-    }
+    const buffer = fs.readFileSync(filePath);
+    // On essaie de deviner le type (basique)
+    await ctx.sock.sendMessage(ctx.remoteJid, { document: buffer, fileName: name, mimetype: 'application/octet-stream' });
+  }
 };

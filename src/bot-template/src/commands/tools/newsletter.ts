@@ -1,35 +1,27 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage } from '../../lib/utils.js';
+import { formatMessage } from '../../lib/messageStyler.js';
 
-export default {
-    name: 'newsletter',
-    aliases: ['cid', 'chinfo'],
-    description: 'Récupère les détails d\'un canal WhatsApp',
-    category: 'Tools',
-    async execute(ctx: CommandContext) {
-        const url = ctx.args[0];
-        if (!url || !url.includes("whatsapp.com/channel/")) {
-            return await ctx.sock.sendMessage(ctx.remoteJid, { text: '💡 Usage: .newsletter <lien_canal>' });
-        }
+export const command = {
+  name: 'newsletter',
+  aliases: ['chaine', 'canal'],
+  description: 'Analyse des métadonnées d\'une chaîne WhatsApp',
+  category: 'Tools',
+  async execute(ctx: CommandContext) {
+    const jid = ctx.args[0];
+    if (!jid || !jid.endsWith('@newsletter')) return await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Usage', '.newsletter <jid_newsletter>') });
 
-        try {
-            const inviteCode = url.split('whatsapp.com/channel/')[1];
-            // @ts-ignore - Baileys method
-            const res = await ctx.sock.newsletterMetadata("invite", inviteCode);
-
-            const details = [
-                `🆔 ID : ${res.id}`,
-                `🏷️ Nom : ${res.name}`,
-                `👥 Followers : ${res.subscribers}`,
-                `✅ Vérifié : ${res.verification === "VERIFIED" ? "Oui" : "Non"}`,
-                `📊 Statut : ${res.state}`
-            ];
-
-            await ctx.sock.sendMessage(ctx.remoteJid, {
-                text: formatMessage('Newsletter Meta', details)
-            });
-        } catch {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: '❌ Échec de récupération. Le canal est peut-être privé ou le lien est mort.' });
-        }
+    try {
+      const metadata = await ctx.sock.newsletterMetadata('jid', jid);
+      const info = [
+        `📌 Titre : ${metadata.name}`,
+        `🆔 ID : ${metadata.id}`,
+        `👥 Abonnés : ${metadata.subscribers}`,
+        `📝 Description : ${metadata.description || 'Aucune'}`,
+        `📅 Statut : ${metadata.state}`
+      ];
+      await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Infos Chaîne', info) });
+    } catch {
+      await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Erreur', 'Impossible de récupérer les métadonnées.') });
     }
+  }
 };

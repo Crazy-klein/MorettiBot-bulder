@@ -1,35 +1,30 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage } from '../../lib/utils.js';
+import { formatMessage } from '../../lib/messageStyler.js';
 import axios from 'axios';
 
-export default {
-    name: 'searchimage',
-    aliases: ['img', 'image'],
-    description: 'Recherche des images haute qualité',
-    category: 'Search',
-    async execute(ctx: CommandContext) {
-        const query = ctx.args[0];
-        if (!query) return await ctx.sock.sendMessage(ctx.remoteJid, { text: '🖼️ Que cherchez-vous ?' });
+export const command = {
+  name: 'searchimage',
+  aliases: ['img', 'gimage'],
+  description: 'Recherche d\'images Google',
+  category: 'Search',
+  async execute(ctx: CommandContext) {
+    const query = ctx.args.join(' ');
+    if (!query) return await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Usage', '.img <sujet>') });
 
-        const count = parseInt(ctx.args[1]) || 1;
-        const limit = Math.min(count, 5);
-
-        try {
-            await ctx.sock.sendMessage(ctx.remoteJid, { react: { text: '🔍', key: ctx.msg.key } });
-            
-            for (let i = 0; i < limit; i++) {
-                const url = `https://picsum.photos/seed/${encodeURIComponent(query + i)}/1200/800`;
-                await ctx.sock.sendMessage(ctx.remoteJid, {
-                    image: { url },
-                    caption: formatMessage('Visual Search', [
-                        `🔎 Résultat ${i + 1} pour : ${query}`,
-                        `📸 Source : Archive Numérique`
-                    ])
-                });
-                if (limit > 1) await new Promise(r => setTimeout(r, 1000));
-            }
-        } catch {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: '❌ Erreur lors de la recherche visuelle.' });
+    try {
+      await ctx.sock.sendMessage(ctx.remoteJid, { react: { text: '🖼️', key: ctx.msg.key } });
+      const res = await axios.get(`https://api.botcahl.com/api/search/googleimage?text=${encodeURIComponent(query)}&apikey=83798935`);
+      
+      if (res.data?.result?.length) {
+        const images = res.data.result.slice(0, 5);
+        for (const url of images) {
+          await ctx.sock.sendMessage(ctx.remoteJid, { image: { url } });
         }
+      } else {
+        throw new Error();
+      }
+    } catch {
+      await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Erreur', 'Aucune image trouvée.') });
     }
+  }
 };

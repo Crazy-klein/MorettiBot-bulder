@@ -2,12 +2,12 @@ import { CommandContext } from '../../types/index.js';
 import { formatMessage } from '../../lib/messageStyler.js';
 import { permissions, JSONDatabase } from '../../lib/utils.js';
 
-const db = new JSONDatabase('antilink.json');
+const db = new JSONDatabase('antibot.json');
 
 export const command = {
-  name: 'antilink',
-  aliases: ['al'],
-  description: 'Active/Désactive le blocage des liens',
+  name: 'antibot',
+  aliases: ['ab'],
+  description: 'Détecte et exclut les autres bots',
   category: 'Security',
   async execute(ctx: CommandContext) {
     if (!ctx.isGroup) return;
@@ -18,12 +18,12 @@ export const command = {
     const action = ctx.args[0]?.toLowerCase();
     if (action === 'on') {
       db.set(ctx.remoteJid, true);
-      await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Sécurité', '🛡️ Anti-Link activé. Les liens seront supprimés.') });
+      await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Sécurité', '🛡️ Anti-Bot activé. Toute intrusion sera sanctionnée.') });
     } else if (action === 'off') {
       db.delete(ctx.remoteJid);
-      await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Sécurité', '🔓 Anti-Link désactivé.') });
+      await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Sécurité', '🔓 Anti-Bot désactivé.') });
     } else {
-      await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Usage', '.antilink <on/off>') });
+      await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Usage', '.antibot <on/off>') });
     }
   }
 };

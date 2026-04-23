@@ -1,32 +1,27 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage, permissions } from '../../lib/utils.js';
+import { formatMessage } from '../../lib/messageStyler.js';
+import { permissions } from '../../lib/utils.js';
 
-export default {
-    name: 'approveall',
-    aliases: ['approuver'],
-    description: 'Approuve toutes les demandes d\'adhésion en attente.',
-    category: 'Group',
-    async execute(ctx: CommandContext) {
-        if (!ctx.isGroup) return;
+export const command = {
+  name: 'approveall',
+  aliases: ['acceptertous'],
+  description: 'Accepte toutes les demandes d\'adhésion en attente',
+  category: 'Group',
+  async execute(ctx: CommandContext) {
+    if (!ctx.isGroup) return;
+    if (!await permissions.isAdmin(ctx.sock, ctx.remoteJid, ctx.sender)) return;
 
-        if (!await permissions.isAdmin(ctx.sock, ctx.remoteJid, ctx.sender)) {
-            return await ctx.sock.sendMessage(ctx.remoteJid, { text: '❌ Droits administrateur requis.' });
-        }
+    try {
+      const pending = await ctx.sock.groupRequestParticipantsList(ctx.remoteJid);
+      if (pending.length === 0) return await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Système', 'Aucune demande en attente.') });
 
-        try {
-            const requests = await ctx.sock.groupRequestParticipantsList(ctx.remoteJid);
-            if (!requests || requests.length === 0) {
-                return await ctx.sock.sendMessage(ctx.remoteJid, { text: '💡 Aucune demande d\'adhésion en attente.' });
-            }
+      for (const user of pending) {
+        await ctx.sock.groupParticipantsUpdate(ctx.remoteJid, [user.jid], 'add');
+      }
 
-            const toApprove = requests.map(req => req.jid);
-            await ctx.sock.groupRequestParticipantsUpdate(ctx.remoteJid, toApprove, 'approve');
-            
-            await ctx.sock.sendMessage(ctx.remoteJid, {
-                text: formatMessage('Admission', `✅ ${toApprove.length} membres ont été acceptés automatiquement.`)
-            });
-        } catch (err) {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: '❌ Erreur lors du traitement.' });
-        }
+      await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Succès', `✅ ${pending.length} demandes acceptées.`) });
+    } catch (e: any) {
+      await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Erreur', e.message) });
     }
+  }
 };

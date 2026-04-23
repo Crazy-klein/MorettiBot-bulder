@@ -1,33 +1,33 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage, mediaUtils } from '../../lib/utils.js';
+import { formatMessage } from '../../lib/messageStyler.js';
+import { mediaUtils, permissions } from '../../lib/utils.js';
+import { config } from '../../config.js';
 import fs from 'fs';
 import path from 'path';
 
-export default {
-    name: 'store',
-    aliases: ['save', 'enregistrer'],
-    description: 'Enregistre un média pour un usage futur',
-    category: 'Tools',
-    async execute(ctx: CommandContext) {
-        const name = ctx.args[0];
-        if (!name) return await ctx.sock.sendMessage(ctx.remoteJid, { text: '💡 Usage: .store <nom du fichier>' });
+export const command = {
+  name: 'store',
+  aliases: ['savemedia', 'archiver'],
+  description: 'Archivage local de média',
+  category: 'Tools',
+  async execute(ctx: CommandContext) {
+    if (!permissions.isOwner(ctx.sender, config.ownerNumber)) return;
 
-        const isMedia = ctx.mediaType || Object.keys(ctx.quotedMessage || {}).some(k => k.endsWith('Message'));
-        if (!isMedia) return await ctx.sock.sendMessage(ctx.remoteJid, { text: '❌ Citez ou envoyez un média.' });
+    const name = ctx.args[0];
+    if (!name) return await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Usage', '.store <nom_archive>') });
 
-        try {
-            await ctx.sock.sendMessage(ctx.remoteJid, { react: { text: '💾', key: ctx.msg.key } });
-            const buffer = await mediaUtils.download(ctx.msg, ctx.sock);
-            if (!buffer) throw new Error();
+    const buffer = await mediaUtils.download(ctx.msg, ctx.sock);
+    const quotedBuffer = ctx.quotedMessage ? await mediaUtils.download({ message: ctx.quotedMessage } as any, ctx.sock) : null;
+    const finalBuffer = buffer || quotedBuffer;
 
-            const storageDir = path.join(process.cwd(), 'database', 'media_store');
-            if (!fs.existsSync(storageDir)) fs.mkdirSync(storageDir, { recursive: true });
+    if (!finalBuffer) return await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Erreur', 'Media introuvable (image, vidéo, audio).') });
 
-            fs.writeFileSync(path.join(storageDir, `${name}.bin`), buffer);
-            
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Store', `✅ Média "${name}" sauvegardé !`) });
-        } catch {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: '❌ Erreur de sauvegarde.' });
-        }
-    }
+    const dir = path.join(process.cwd(), 'database', 'internal_storage');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+    const filePath = path.join(dir, name);
+    fs.writeFileSync(filePath, finalBuffer);
+
+    await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Succès', `✅ Média archivé sous le nom : ${name}`) });
+  }
 };

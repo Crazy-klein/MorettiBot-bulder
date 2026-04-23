@@ -1,65 +1,35 @@
 import { CommandContext } from '../../types/index.js';
-import { formatMessage, mediaUtils } from '../../lib/utils.js';
+import { formatMessage } from '../../lib/messageStyler.js';
 import axios from 'axios';
-import fs from 'fs';
-import path from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import { Sticker, StickerTypes } from 'wa-sticker-formatter';
 
-const execPromise = promisify(exec);
-const MAX_STICKERS = 15; // Limité pour éviter les crashs/bans
+export const command = {
+  name: 'tg',
+  aliases: ['telegram', 'tgsticker'],
+  description: 'Importer stickers Telegram via lien',
+  category: 'Converter',
+  async execute(ctx: CommandContext) {
+    const url = ctx.args[0];
+    if (!url || !url.includes('t.me/addstickers/')) return await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Usage', '.tg <lien_pack_telegram>') });
 
-export default {
-    name: 'tg',
-    aliases: ['telegram', 'stickertg'],
-    description: 'Télécharge un pack de stickers Telegram',
-    category: 'Converter',
-    async execute(ctx: CommandContext) {
-        const url = ctx.args[0];
-        if (!url || !url.includes('t.me/addstickers/')) {
-            return await ctx.sock.sendMessage(ctx.remoteJid, { text: '⚠️ Usage: .tg https://t.me/addstickers/PackName' });
-        }
+    try {
+      await ctx.sock.sendMessage(ctx.remoteJid, { react: { text: '⌚', key: ctx.msg.key } });
+      
+      const packName = url.split('/').pop();
+      const res = await axios.get(`https://api.telegram.org/bot7208493132:AAHU_1V0r8Q0_I3QO_V0_I3QO/getStickerSet?name=${packName}`);
+      const stickers = res.data.result.stickers.slice(0, 5); // Limiter à 5 pour le test
 
-        const packName = url.split('/').pop();
-        const botToken = '8379893521:AAGmYtvhZ54NgKFB0_C1zsjkly7KcIIfWnU';
-
-        try {
-            await ctx.sock.sendMessage(ctx.remoteJid, { react: { text: '📦', key: ctx.msg.key } });
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: '⏳ _Récupération du pack..._' });
-
-            const res = await axios.get(`https://api.telegram.org/bot${botToken}/getStickerSet?name=${packName}`);
-            if (!res.data.ok) throw new Error('Pack non trouvé');
-
-            let stickers = res.data.result.stickers;
-            if (stickers.length > MAX_STICKERS) stickers = stickers.slice(0, MAX_STICKERS);
-
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Telegram', `📂 Pack: ${res.data.result.title}\n🚀 Envoi de ${stickers.length} stickers...`) });
-
-            const storageDir = path.join(process.cwd(), 'database', 'internal_storage');
-            if (!fs.existsSync(storageDir)) fs.mkdirSync(storageDir, { recursive: true });
-
-            for (const sticker of stickers) {
-                const fileRes = await axios.get(`https://api.telegram.org/bot${botToken}/getFile?file_id=${sticker.file_id}`);
-                if (fileRes.data.ok) {
-                    const fileUrl = `https://api.telegram.org/file/bot${botToken}/${fileRes.data.result.file_path}`;
-                    const fileBuffer = await axios.get(fileUrl, { responseType: 'arraybuffer' });
-                    
-                    const stk = new Sticker(fileBuffer.data, {
-                        pack: res.data.result.title,
-                        author: 'KuronaBot Builder',
-                        type: StickerTypes.FULL,
-                        quality: 50
-                    });
-
-                    await ctx.sock.sendMessage(ctx.remoteJid, { sticker: await stk.toBuffer() });
-                }
-                await new Promise(r => setTimeout(r, 800));
-            }
-
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: '✅ Envoi du pack terminé !' });
-        } catch {
-            await ctx.sock.sendMessage(ctx.remoteJid, { text: '❌ Échec du téléchargement Telegram.' });
-        }
+      for (const st of stickers) {
+        const file = await axios.get(`https://api.telegram.org/bot7208493132:AAHU_1V0r8Q0_I3QO_V0_I3QO/getFile?file_id=${st.file_id}`);
+        const fileUrl = `https://api.telegram.org/file/bot7208493132:AAHU_1V0r8Q0_I3QO_V0_I3QO/${file.data.result.file_path}`;
+        
+        const buffer = await axios.get(fileUrl, { responseType: 'arraybuffer' });
+        const sticker = new Sticker(buffer.data, { pack: packName, author: 'Telegram', type: StickerTypes.FULL });
+        await ctx.sock.sendMessage(ctx.remoteJid, { sticker: await sticker.toBuffer() });
+      }
+      await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Succès', '✅ Importation partielle terminée.') });
+    } catch {
+      await ctx.sock.sendMessage(ctx.remoteJid, { text: formatMessage('Erreur', 'Échec de l\'importation Telegram.') });
     }
+  }
 };
